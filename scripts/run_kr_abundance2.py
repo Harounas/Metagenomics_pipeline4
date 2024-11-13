@@ -68,7 +68,7 @@ def main():
         contig_paths = read_contig_files(args.contigs_file)
         for contig_file in contig_paths:
             if os.path.isfile(contig_file):
-                base_name = os.path.basename(contig_file).replace(".fasta", "")
+                base_name = os.path.basename(contig_file).replace("/contigs.fasta", "").replace("_denovo","").replace("./","")
                 logging.info(f"Processing contig file: {contig_file} for Kraken analysis.")
                 process_sample(contig_file, None, base_name, None, args.kraken_db, args.output_dir, args.threads, False, args.use_precomputed_reports)
             else:
