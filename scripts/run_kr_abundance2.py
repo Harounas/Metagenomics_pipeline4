@@ -25,6 +25,19 @@ def create_sample_id_df(input_dir):
     sample_id_df = pd.DataFrame(sample_ids, columns=["Sample_IDs"])
     return sample_id_df
 
+def read_contig_files(contig_file):
+    """
+    Reads a file containing paths to contig fasta files and returns a list of file paths.
+    """
+    contig_paths = []
+    try:
+        with open(contig_file, 'r') as f:
+            contig_paths = [line.strip() for line in f.readlines() if line.strip()]
+    except FileNotFoundError:
+        logging.error(f"Contig file '{contig_file}' not found.")
+        sys.exit(1)
+    return contig_paths
+
 def main():
     parser = argparse.ArgumentParser(description="Pipeline for Trimmomatic trimming, Bowtie2 host depletion (optional), and Kraken2 taxonomic classification.")
     parser.add_argument("--kraken_db", required=True, help="Path to Kraken2 database.")
@@ -36,12 +49,11 @@ def main():
     parser.add_argument("--no_metadata", action='store_true', help="Use sample IDs as metadata instead of a metadata file.")
     parser.add_argument("--read_count", type=int, default=0, help="Minimum read count threshold.")
     parser.add_argument("--top_N", type=int, default=None, help="Select the top N most common viruses or bacteria.")
-    #parser.add_argument("--filt_virus", required=False,type=None, default=None, help="Select a virus to exclude.")
-    #parser.add_argument("--filt_bact", required=False,type=None, default=None, help="Select a bacteria to exclude.")
     parser.add_argument("--no_bowtie2", action='store_true', help="Skip Bowtie2 host depletion.")
     parser.add_argument("--bacteria", action='store_true', help="Generate bacterial abundance plots.")
     parser.add_argument("--virus", action='store_true', help="Generate viral abundance plots.")
     parser.add_argument("--use_precomputed_reports", action='store_true', help="Use precomputed Kraken reports instead of running Kraken2.")
+    parser.add_argument("--contigs_file", help="Path to a file containing paths to contig files for Kraken analysis.")
     
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
@@ -51,38 +63,49 @@ def main():
         logging.error(f"Kraken database directory '{args.kraken_db}' not found.")
         sys.exit(1)
 
-    run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
+    # Process contigs if provided
+    if args.contigs_file:
+        contig_paths = read_contig_files(args.contigs_file)
+        for contig_file in contig_paths:
+            if os.path.isfile(contig_file):
+                base_name = os.path.basename(contig_file).replace(".fasta", "")
+                logging.info(f"Processing contig file: {contig_file} for Kraken analysis.")
+                process_sample(contig_file, None, base_name, None, args.kraken_db, args.output_dir, args.threads, False, args.use_precomputed_reports)
+            else:
+                logging.warning(f"Contig file '{contig_file}' not found. Skipping.")
 
-    for forward in glob.glob(os.path.join(args.input_dir, "*_R1*.fastq*")):
-        base_name = os.path.basename(forward)
-        # Remove suffixes to get the sample ID
-        base_name = base_name.replace("_R1_001.fastq.gz", "").replace("_R1_001.fastq", "")
-        base_name = base_name.replace("_R1.fastq.gz", "").replace("_R1.fastq", "")
-        base_name = base_name.replace("R1.fastq.gz", "").replace("R1.fastq", "")
-        base_name = base_name.replace("_R1_001", "").replace("_R1", "")
+    else:
+        # Check if Kraken input is from paired-end FASTQ files
+        run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
 
-        # Define reverse file candidates
-        reverse_candidates = [
-            os.path.join(args.input_dir, f"{base_name}_R2_001.fastq.gz"),
-            os.path.join(args.input_dir, f"{base_name}_R2_001.fastq"),
-            os.path.join(args.input_dir, f"{base_name}_R2.fastq.gz"),
-            os.path.join(args.input_dir, f"{base_name}_R2.fastq"),
-            os.path.join(args.input_dir, f"{base_name}R2_001.fastq.gz"),
-            os.path.join(args.input_dir, f"{base_name}R2_001.fastq"),
-            os.path.join(args.input_dir, f"{base_name}R2.fastq.gz"),
-            os.path.join(args.input_dir, f"{base_name}R2.fastq"),
-        ]
+        for forward in glob.glob(os.path.join(args.input_dir, "*_R1*.fastq*")):
+            base_name = os.path.basename(forward)
+            base_name = base_name.replace("_R1_001.fastq.gz", "").replace("_R1_001.fastq", "")
+            base_name = base_name.replace("_R1.fastq.gz", "").replace("_R1.fastq", "")
+            base_name = base_name.replace("R1.fastq.gz", "").replace("R1.fastq", "")
+            base_name = base_name.replace("_R1_001", "").replace("_R1", "")
 
-        reverse = next((f for f in reverse_candidates if os.path.isfile(f)), None)
+            # Define reverse file candidates
+            reverse_candidates = [
+                os.path.join(args.input_dir, f"{base_name}_R2_001.fastq.gz"),
+                os.path.join(args.input_dir, f"{base_name}_R2_001.fastq"),
+                os.path.join(args.input_dir, f"{base_name}_R2.fastq.gz"),
+                os.path.join(args.input_dir, f"{base_name}_R2.fastq"),
+                os.path.join(args.input_dir, f"{base_name}R2_001.fastq.gz"),
+                os.path.join(args.input_dir, f"{base_name}R2_001.fastq"),
+                os.path.join(args.input_dir, f"{base_name}R2.fastq.gz"),
+                os.path.join(args.input_dir, f"{base_name}R2.fastq"),
+            ]
 
-        if reverse:
-            logging.info(f"Processing sample {base_name} with paired files.")
-            process_sample(forward, reverse, base_name, args.bowtie2_index, args.kraken_db, args.output_dir, args.threads, run_bowtie, args.use_precomputed_reports)
-        else:
-            logging.warning(f"No matching R2 file found for {base_name}. Skipping.")
+            reverse = next((f for f in reverse_candidates if os.path.isfile(f)), None)
+
+            if reverse:
+                logging.info(f"Processing sample {base_name} with paired files.")
+                process_sample(forward, reverse, base_name, args.bowtie2_index, args.kraken_db, args.output_dir, args.threads, run_bowtie, args.use_precomputed_reports)
+            else:
+                logging.warning(f"No matching R2 file found for {base_name}. Skipping.")
 
     # Metadata handling and abundance plot generation logic remains the same...
-       # Load metadata or create sample ID DataFrame
     if args.no_metadata:
         sample_id_df = create_sample_id_df(args.input_dir)
         logging.info("Using sample IDs as metadata.")
@@ -96,20 +119,16 @@ def main():
             sys.exit(1)
         merged_tsv_path = aggregate_kraken_results(args.output_dir, metadata_file=args.metadata_file, read_count=args.read_count)
 
-
-
     # Generate abundance plots based on provided flags
     if merged_tsv_path and os.path.isfile(merged_tsv_path):
         if args.virus:
             logging.info("Generating viral abundance plots.")
-            generate_abundance_plots(merged_tsv_path,args.top_N)
+            generate_abundance_plots(merged_tsv_path, args.top_N)
         elif args.bacteria:
             logging.info("Generating bacterial abundance plots.")
             generate_abundance_plots(merged_tsv_path, args.top_N)
         else:
             logging.warning("No plot type specified. Use --virus or --bacteria to generate plots.")
-
-     
 
 if __name__ == "__main__":
     main()
