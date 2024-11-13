@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="Metagenomics_pipeline2",
+    name="Metagenomics_pipeline3",
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
