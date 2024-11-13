@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="Metagenomics_pipeline",
+    name="Metagenomics_pipeline2",
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
@@ -11,7 +11,7 @@ setup(
     entry_points={
         "console_scripts": [
            # "run_kr_abundance=Metagenomics_pipeline.scripts.run_kr_abundance:main",
-             "run_kr_abundance=scripts.run_kr_abundance:main",
+             "run_kr_abundance2=scripts.run_kr_abundance2:main",
         ],
     },
     author="Harouna",
