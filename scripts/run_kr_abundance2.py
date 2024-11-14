@@ -72,7 +72,7 @@ def main():
                 cleaned_path = contig_file.rstrip("/")
                 # Split the path into parts
                 path_parts = cleaned_path.split(os.sep)
-                basename=path_parts[-2]
+                base_name=path_parts[-2]
                 logging.info(f"Processing contig file: {contig_file} for Kraken analysis.")
                 process_sample(contig_file, None, base_name, None, args.kraken_db, args.output_dir, args.threads, False, args.use_precomputed_reports)
             else:
