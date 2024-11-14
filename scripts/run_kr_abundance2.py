@@ -71,7 +71,8 @@ def main():
                 # Extract base name from the file path
                 cleaned_path = contig_file.rstrip("/")
                 path_parts = cleaned_path.split(os.sep)
-                base_name = path_parts[-2]  # Get the base name without the full path
+                base_name = path_parts[-2].replace("_denovo","")
+  # Get the base name without the full path
                 
                 logging.info(f"Processing contig file: {contig_file} for Kraken analysis.")
                 
