@@ -63,24 +63,39 @@ def main():
         logging.error(f"Kraken database directory '{args.kraken_db}' not found.")
         sys.exit(1)
 
-    # Process contigs if provided
+            # Process contigs if provided
     if args.contigs_file:
         contig_paths = read_contig_files(args.contigs_file)
         for contig_file in contig_paths:
             if os.path.isfile(contig_file):
-                #base_name = os.path.basename(contig_file).replace("_denovo/contigs.fasta", "").replace("./", "")
+                # Extract base name from the file path
                 cleaned_path = contig_file.rstrip("/")
-                # Split the path into parts
                 path_parts = cleaned_path.split(os.sep)
-                base_name=path_parts[-2]
+                base_name = path_parts[-2]
+
                 logging.info(f"Processing contig file: {contig_file} for Kraken analysis.")
-                process_sample(contig_file, None, base_name, None, args.kraken_db, args.output_dir, args.threads, False, args.use_precomputed_reports)
+                
+                # Directly process with Kraken without Trimmomatic or Bowtie2
+                process_sample(
+                    forward_file=contig_file, 
+                    reverse_file=None, 
+                    sample_id=base_name, 
+                    bowtie2_index=None, 
+                    kraken_db=args.kraken_db, 
+                    output_dir=args.output_dir, 
+                    threads=args.threads, 
+                    run_bowtie=False, 
+                    skip_trimmomatic=True, 
+                    use_precomputed_reports=args.use_precomputed_reports
+                )
             else:
                 logging.warning(f"Contig file '{contig_file}' not found. Skipping.")
 
     else:
-        # Check if Kraken input is from paired-end FASTQ files
+        # Normal processing for paired-end FASTQ files without contigs file
         run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
+
+        for forward in glob.glob(os.path.join(args.input_dir, "*_R1*.fastq*")):
 
         for forward in glob.glob(os.path.join(args.input_dir, "*_R1*.fastq*")):
             base_name = os.path.basename(forward)
