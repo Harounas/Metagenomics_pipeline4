@@ -69,7 +69,7 @@ def main():
         for contig_file in contig_paths:
             if os.path.isfile(contig_file):
                 #base_name = os.path.basename(contig_file).replace("_denovo/contigs.fasta", "").replace("./", "")
-                cleaned_path = path_with_slash.rstrip("/")
+                cleaned_path = contig_file.rstrip("/")
                 # Split the path into parts
                 path_parts = cleaned_path.split(os.sep)
                 basename=path_parts[-2]
