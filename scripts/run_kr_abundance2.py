@@ -77,16 +77,16 @@ def main():
                 
                 # Directly process with Kraken without Trimmomatic or Bowtie2
                 process_sample(
-                    forward_file=contig_file, 
-                    reverse_file=None, 
-                    sample_id=base_name, 
-                    bowtie2_index=None, 
-                    kraken_db=args.kraken_db, 
-                    output_dir=args.output_dir, 
-                    threads=args.threads, 
-                    run_bowtie=False, 
-                    skip_trimmomatic=True, 
-                    use_precomputed_reports=args.use_precomputed_reports
+                    contig_file, 
+                    None, 
+                    base_name, 
+                    None, 
+                    args.kraken_db, 
+                    args.output_dir, 
+                    args.threads, 
+                    False, 
+                    True, 
+                    args.use_precomputed_reports
                 )
             else:
                 logging.warning(f"Contig file '{contig_file}' not found. Skipping.")
