@@ -95,8 +95,7 @@ def main():
         # Normal processing for paired-end FASTQ files without contigs file
         run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
 
-        for forward in glob.glob(os.path.join(args.input_dir, "*_R1*.fastq*")):
-
+     
         for forward in glob.glob(os.path.join(args.input_dir, "*_R1*.fastq*")):
             base_name = os.path.basename(forward)
             base_name = base_name.replace("_R1_001.fastq.gz", "").replace("_R1_001.fastq", "")
