@@ -63,7 +63,7 @@ def main():
         logging.error(f"Kraken database directory '{args.kraken_db}' not found.")
         sys.exit(1)
 
-            # Process contigs if provided
+       # Process contigs if provided
     if args.contigs_file:
         contig_paths = read_contig_files(args.contigs_file)
         for contig_file in contig_paths:
@@ -71,22 +71,22 @@ def main():
                 # Extract base name from the file path
                 cleaned_path = contig_file.rstrip("/")
                 path_parts = cleaned_path.split(os.sep)
-                base_name = path_parts[-2]
-
+                base_name = path_parts[-2]  # Get the base name without the full path
+                
                 logging.info(f"Processing contig file: {contig_file} for Kraken analysis.")
                 
                 # Directly process with Kraken without Trimmomatic or Bowtie2
                 process_sample(
-                    contig_file, 
-                    None, 
-                    base_name, 
-                    None, 
-                    args.kraken_db, 
-                    args.output_dir, 
-                    args.threads, 
-                    False, 
-                    True, 
-                    args.use_precomputed_reports
+                    contig_file,  # Contig file as input for Kraken
+                    None,  # No paired-end reads, so no reverse file
+                    base_name,  # Sample base name
+                    None,  # No Bowtie2 index
+                    args.kraken_db,  # Kraken2 database
+                    args.output_dir,  # Output directory
+                    args.threads,  # Number of threads to use
+                    False,  # Do not run Bowtie2
+                    True,  # Process Kraken (skip trimming and Bowtie2)
+                    args.use_precomputed_reports  # Use precomputed Kraken reports if specified
                 )
             else:
                 logging.warning(f"Contig file '{contig_file}' not found. Skipping.")
