@@ -100,6 +100,11 @@ def main():
         run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
 
      """
+    if not os.path.isdir(args.kraken_db):
+        logging.error(f"Kraken database directory '{args.kraken_db}' not found.")
+        sys.exit(1)
+
+    run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
     for forward in glob.glob(os.path.join(args.input_dir, "*_R1*.fastq*")):
             base_name = os.path.basename(forward)
             base_name = base_name.replace("_R1_001.fastq.gz", "").replace("_R1_001.fastq", "")
