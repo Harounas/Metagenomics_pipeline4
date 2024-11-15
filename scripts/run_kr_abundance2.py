@@ -63,7 +63,8 @@ def main():
         logging.error(f"Kraken database directory '{args.kraken_db}' not found.")
         sys.exit(1)
 
-   """    # Process contigs if provided
+      # Process contigs if provided
+    """
     if args.contigs_file:
         print(f"Using contigs file: {args.contigs_file}")
         contig_paths = read_contig_files(args.contigs_file)
@@ -93,7 +94,7 @@ def main():
                 )
             else:
                 logging.warning(f"Contig file '{contig_file}' not found. Skipping.")
-"""
+     """
     else:
         # Normal processing for paired-end FASTQ files without contigs file
         run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
