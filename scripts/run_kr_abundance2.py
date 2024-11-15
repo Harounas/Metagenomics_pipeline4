@@ -53,8 +53,9 @@ def main():
     parser.add_argument("--bacteria", action='store_true', help="Generate bacterial abundance plots.")
     parser.add_argument("--virus", action='store_true', help="Generate viral abundance plots.")
     parser.add_argument("--use_precomputed_reports", action='store_true', help="Use precomputed Kraken reports instead of running Kraken2.")
+    parser.add_argument("--col_filter", type=str, help="Bacteria or virus name to be removed")
     #parser.add_argument("--contigs_file", help="Path to a file containing paths to contig files for Kraken analysis.")
-    
+
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -150,10 +151,10 @@ def main():
     if merged_tsv_path and os.path.isfile(merged_tsv_path):
         if args.virus:
             logging.info("Generating viral abundance plots.")
-            generate_abundance_plots(merged_tsv_path, args.top_N)
+            generate_abundance_plots(merged_tsv_path, args.top_N, args.col_filter)
         elif args.bacteria:
             logging.info("Generating bacterial abundance plots.")
-            generate_abundance_plots(merged_tsv_path, args.top_N)
+            generate_abundance_plots(merged_tsv_path, args.top_N,args.col_filter)
         else:
             logging.warning("No plot type specified. Use --virus or --bacteria to generate plots.")
 
