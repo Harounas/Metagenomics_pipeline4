@@ -12,18 +12,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output_dir, threads, run_bowtie, use_precomputed_reports, contigs_file=None):
     try:
-        
         if contigs_file:
-            #if use_precomputed_reports:
-                #kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
-                 
-            #else:
-               print(f"Running Kraken2 on provided contigs file for sample {base_name}")
+            print(f"Running Kraken2 on provided contigs file for sample {base_name}")
             # Step: Run Kraken2 on the contigs file
-               kraken_report = run_kraken2(forward, None, base_name, kraken_db, output_dir, threads)
-            
-           
-        if not use_precomputed_reports and not contigs_file:
+            kraken_report = run_kraken2(forward, None, base_name, kraken_db, output_dir, threads)
+            return kraken_report  # Return the Kraken report generated from contigs file
+        
+        if not use_precomputed_reports:
             # Step 1: Run Trimmomatic
             trimmed_forward, trimmed_reverse = run_trimmomatic(forward, reverse, base_name, output_dir, threads)
 
@@ -35,7 +30,6 @@ def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output
 
             # Step 3: Run Kraken2 with the reads
             kraken_report = run_kraken2(unmapped_r1, unmapped_r2, base_name, kraken_db, output_dir, threads)
-                
         else:
             # Use the precomputed Kraken2 report
             kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
