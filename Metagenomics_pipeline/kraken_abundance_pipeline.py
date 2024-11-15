@@ -159,7 +159,7 @@ def generate_abundance_plots(merged_tsv_path, top_N,col_filter):
         df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
         df = df[df['Scientific_name'] != 'Homo sapiens']  # Remove human reads
         if col_filter:
-            df=df[df['Scientific_name'] != col_filter] 
+            df=df[~df['Scientific_name'].isin(col_filter)] 
 
         # Generate both viral and bacterial abundance plots
         for focus, filter_str, plot_title in [
