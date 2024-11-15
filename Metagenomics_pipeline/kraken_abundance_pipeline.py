@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output_dir, threads, run_bowtie, use_precomputed_reports, contigs_file=None):
     try:
-        if contigs_file:
+        if contigs_file and not use_precomputed_reports:
             print(f"Running Kraken2 on provided contigs file for sample {base_name}")
             # Step: Run Kraken2 on the contigs file
             kraken_report = run_kraken2(forward, None, base_name, kraken_db, output_dir, threads)
