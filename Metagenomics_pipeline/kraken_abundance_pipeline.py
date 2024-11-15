@@ -14,7 +14,8 @@ def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output
     try:
         if contigs_file:
             print(f"Skipping Trimmomatic, Bowtie2, and Kraken2 steps as --contigs_file is provided for sample {base_name}")
-            return contigs_file  # If contigs are provided, return the file directly as output
+            kraken_report = run_kraken2(contigs_file, None, base_name, kraken_db, output_dir, threads)
+            return kraken_report  # If contigs are provided, return the file directly as output
         
         if not use_precomputed_reports:
             # Step 1: Run Trimmomatic
