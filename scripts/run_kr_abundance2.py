@@ -53,7 +53,7 @@ def main():
     parser.add_argument("--bacteria", action='store_true', help="Generate bacterial abundance plots.")
     parser.add_argument("--virus", action='store_true', help="Generate viral abundance plots.")
     parser.add_argument("--use_precomputed_reports", action='store_true', help="Use precomputed Kraken reports instead of running Kraken2.")
-    parser.add_argument("--contigs_file", help="Path to a file containing paths to contig files for Kraken analysis.")
+    #parser.add_argument("--contigs_file", help="Path to a file containing paths to contig files for Kraken analysis.")
     
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
@@ -63,7 +63,7 @@ def main():
         logging.error(f"Kraken database directory '{args.kraken_db}' not found.")
         sys.exit(1)
 
-       # Process contigs if provided
+   """    # Process contigs if provided
     if args.contigs_file:
         print(f"Using contigs file: {args.contigs_file}")
         contig_paths = read_contig_files(args.contigs_file)
@@ -93,7 +93,7 @@ def main():
                 )
             else:
                 logging.warning(f"Contig file '{contig_file}' not found. Skipping.")
-
+"""
     else:
         # Normal processing for paired-end FASTQ files without contigs file
         run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
