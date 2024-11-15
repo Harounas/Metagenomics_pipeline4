@@ -11,34 +11,53 @@ import distinctipy
 import numpy as np
 import matplotlib.pyplot as plt
 def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output_dir, threads, run_bowtie, use_precomputed_reports, contigs_file=None):
+    """
+    Process a sample based on provided parameters and conditions.
+
+    Parameters:
+    - forward: Forward read file.
+    - reverse: Reverse read file.
+    - base_name: Base name for output files.
+    - bowtie2_index: Bowtie2 index for host genome depletion.
+    - kraken_db: Path to Kraken2 database.
+    - output_dir: Directory to store output files.
+    - threads: Number of threads to use.
+    - run_bowtie: Boolean, whether to run Bowtie2 for host depletion.
+    - use_precomputed_reports: Boolean, whether to use precomputed Kraken2 reports.
+    - contigs_file: Path to the contigs file, if provided.
+
+    Returns:
+    - kraken_report: Path to the Kraken2 report.
+    """
     try:
-        if contigs_file and not use_precomputed_reports:
-            print(f"Running Kraken2 on provided contigs file for sample {base_name}")
-            # Step: Run Kraken2 on the contigs file
-            kraken_report = run_kraken2(forward, None, base_name, kraken_db, output_dir, threads)
-            #return kraken_report  # Return the Kraken report generated from contigs file
-        elif use_precomputed_reports and contigs_file:
-             kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
-            
-        
-        elif not use_precomputed_reports and not contigs_file:
-            # Step 1: Run Trimmomatic
-            trimmed_forward, trimmed_reverse = run_trimmomatic(forward, reverse, base_name, output_dir, threads)
-
-            # Step 2: Optionally run Bowtie2 to deplete host genome reads
-            if run_bowtie:
-                unmapped_r1, unmapped_r2 = run_bowtie2(trimmed_forward, trimmed_reverse, base_name, bowtie2_index, output_dir, threads)
+        if contigs_file:
+            if use_precomputed_reports:
+                # Use precomputed Kraken2 report with contigs file
+                kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
+                if not os.path.exists(kraken_report):
+                    raise FileNotFoundError(f"Precomputed Kraken2 report not found: {kraken_report}")
             else:
-                unmapped_r1, unmapped_r2 = trimmed_forward, trimmed_reverse
+                # Run Kraken2 on the provided contigs file
+                kraken_report = run_kraken2(forward, None, base_name, kraken_db, output_dir, threads)
+        
+        elif not contigs_file:
+            if use_precomputed_reports:
+                # Use precomputed Kraken2 report
+                kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
+                if not os.path.exists(kraken_report):
+                    raise FileNotFoundError(f"Precomputed Kraken2 report not found: {kraken_report}")
+            else:
+                # Process reads with Trimmomatic and optionally Bowtie2
+                trimmed_forward, trimmed_reverse = run_trimmomatic(forward, reverse, base_name, output_dir, threads)
 
-            # Step 3: Run Kraken2 with the reads
-            kraken_report = run_kraken2(unmapped_r1, unmapped_r2, base_name, kraken_db, output_dir, threads)
-        else:
-            # Use the precomputed Kraken2 report
-            kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
-            if not os.path.exists(kraken_report):
-                raise FileNotFoundError(f"Precomputed Kraken2 report not found: {kraken_report}")
-
+                if run_bowtie:
+                    unmapped_r1, unmapped_r2 = run_bowtie2(trimmed_forward, trimmed_reverse, base_name, bowtie2_index, output_dir, threads)
+                else:
+                    unmapped_r1, unmapped_r2 = trimmed_forward, trimmed_reverse
+                
+                # Run Kraken2 with the reads
+                kraken_report = run_kraken2(unmapped_r1, unmapped_r2, base_name, kraken_db, output_dir, threads)
+        
         return kraken_report
 
     except Exception as e:
