@@ -10,7 +10,7 @@ from .kraken2 import run_kraken2
 import distinctipy
 import numpy as np
 import matplotlib.pyplot as plt
-def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output_dir, threads, run_bowtie, use_precomputed_reports, contigs_file=None):
+def process_sample(contigs_file, reverse, base_name, bowtie2_index, kraken_db, output_dir, threads, run_bowtie, use_precomputed_reports, contigs_file=None):
     try:
         if contigs_file:
             print(f"Skipping Trimmomatic, Bowtie2, and Kraken2 steps as --contigs_file is provided for sample {base_name}")
