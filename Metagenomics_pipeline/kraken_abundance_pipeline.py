@@ -152,12 +152,14 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, 
         print(f"Error aggregating Kraken results: {e}")
         return None
 
-def generate_abundance_plots(merged_tsv_path, top_N):
+def generate_abundance_plots(merged_tsv_path, top_N,col_filter):
     try:
         df = pd.read_csv(merged_tsv_path, sep="\t")
         df.columns = df.columns.str.replace('/', '_').str.replace(' ', '_')
         df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
         df = df[df['Scientific_name'] != 'Homo sapiens']  # Remove human reads
+        if col_filter:
+            df=df[df['Scientific_name'] != col_filter] 
 
         # Generate both viral and bacterial abundance plots
         for focus, filter_str, plot_title in [
