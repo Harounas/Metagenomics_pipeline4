@@ -65,6 +65,7 @@ def main():
 
        # Process contigs if provided
     if args.contigs_file:
+        print(f"Using contigs file: {args.contigs_file}")
         contig_paths = read_contig_files(args.contigs_file)
         for contig_file in contig_paths:
             if os.path.isfile(contig_file):
