@@ -75,6 +75,7 @@ def main():
                 base_name = path_parts[-2]#.replace("_denovo","")
   # Get the base name without the full path
                 
+                logging.info(f"Processing sample name: {base_name} for Kraken analysis.")
                 logging.info(f"Processing contig file: {contig_file} for Kraken analysis.")
                 
                 # Directly process with Kraken without Trimmomatic or Bowtie2
