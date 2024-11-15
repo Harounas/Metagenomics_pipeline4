@@ -23,7 +23,7 @@ def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output
                kraken_report = run_kraken2(forward, None, base_name, kraken_db, output_dir, threads)
             
            
-        elif not use_precomputed_reports and not contigs_file:
+        if not use_precomputed_reports and not contigs_file:
             # Step 1: Run Trimmomatic
             trimmed_forward, trimmed_reverse = run_trimmomatic(forward, reverse, base_name, output_dir, threads)
 
