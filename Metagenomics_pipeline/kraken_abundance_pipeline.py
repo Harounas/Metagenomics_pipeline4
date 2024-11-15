@@ -17,11 +17,11 @@ def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output
             # Step: Run Kraken2 on the contigs file
             kraken_report = run_kraken2(forward, None, base_name, kraken_db, output_dir, threads)
             #return kraken_report  # Return the Kraken report generated from contigs file
-        #if use_precomputed_reports and contigs_file:
-            # kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
+        elif use_precomputed_reports and contigs_file:
+             kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
             
         
-        if not use_precomputed_reports:
+        elif not use_precomputed_reports and not contigs_file:
             # Step 1: Run Trimmomatic
             trimmed_forward, trimmed_reverse = run_trimmomatic(forward, reverse, base_name, output_dir, threads)
 
