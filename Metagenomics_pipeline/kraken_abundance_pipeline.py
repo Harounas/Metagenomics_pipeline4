@@ -14,10 +14,10 @@ def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output
     try:
         
         if contigs_file:
-            if use_precomputed_reports:
-                kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
+            #if use_precomputed_reports:
+                #kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
                  
-            else:
+            #else:
                print(f"Running Kraken2 on provided contigs file for sample {base_name}")
             # Step: Run Kraken2 on the contigs file
                kraken_report = run_kraken2(forward, None, base_name, kraken_db, output_dir, threads)
