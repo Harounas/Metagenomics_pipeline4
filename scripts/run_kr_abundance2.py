@@ -53,7 +53,7 @@ def main():
     parser.add_argument("--bacteria", action='store_true', help="Generate bacterial abundance plots.")
     parser.add_argument("--virus", action='store_true', help="Generate viral abundance plots.")
     parser.add_argument("--use_precomputed_reports", action='store_true', help="Use precomputed Kraken reports instead of running Kraken2.")
-    parser.add_argument("--col_filter", nargs='*', help="Bacteria or virus name to be removed")
+    parser.add_argument("--col_filter", type=str,nargs='+', help="Bacteria or virus name to be removed")
     #parser.add_argument("--contigs_file", help="Path to a file containing paths to contig files for Kraken analysis.")
 
     args = parser.parse_args()
