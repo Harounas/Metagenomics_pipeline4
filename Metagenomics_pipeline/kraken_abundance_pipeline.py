@@ -77,7 +77,7 @@ def generate_sample_ids_csv(kraken_dir):
         print(f"Error generating sample_ids.csv: {e}")
         return None
         
-def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, read_count=10):
+def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, read_count=1,max_read_count=1000000000000000000000000000):
     """
     Aggregates Kraken results, merging metadata or using sample IDs if metadata is not provided.
 
@@ -86,6 +86,7 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, 
     - metadata_file (str, optional): Path to the metadata CSV file. Defaults to None.
     - sample_id_df (DataFrame, optional): DataFrame of sample IDs. Used if metadata_file is not provided.
     - read_count (int): Minimum read count threshold for filtering results.
+    - read_count (int): Maximum read count threshold for filtering results.
     
     Returns:
     - str: Path to the generated merged TSV file.
@@ -123,7 +124,7 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, 
                         sampleandtaxonid = extracted_part + str(ncbi_ID)
 
                         # Check if rank code is species-level and meets the read count threshold
-                        if (rank_code == 'S' or rank_code == 'S1' or rank_code == 'S2' or rank_code == 'S3') and nr_frag_direct_at_taxon >= read_count:
+                        if (rank_code == 'S' or rank_code == 'S1' or rank_code == 'S2' or rank_code == 'S3') and nr_frag_direct_at_taxon >= read_count and nr_frag_direct_at_taxon <=max_read_count:
                             if extracted_part in metadata[sample_id_col].unique():
                                 sample_metadata = metadata.loc[metadata[sample_id_col] == extracted_part].iloc[0].to_dict()
                                 aggregated_results[sampleandtaxonid] = {
@@ -152,7 +153,7 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, 
         print(f"Error aggregating Kraken results: {e}")
         return None
 
-def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep,max_read_count=1000000000000):
+def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep):
     try:
         df = pd.read_csv(merged_tsv_path, sep="\t")
         df.columns = df.columns.str.replace('/', '_').str.replace(' ', '_')
@@ -162,8 +163,8 @@ def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep,max_r
             df=df[~df['Scientific_name'].isin(col_filter)] 
         if pat_to_keep:
             df=df[df['Scientific_name'].isin(pat_to_keep)] 
-        if max_read_count:
-            df=df[df['Nr_frag_direct_at_taxon']<=max_read_count]
+        #if max_read_count:
+            #df=df[df['Nr_frag_direct_at_taxon']<=max_read_count]
             
             
         # Generate both viral and bacterial abundance plots
