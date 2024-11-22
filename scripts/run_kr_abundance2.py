@@ -55,7 +55,7 @@ def main():
     parser.add_argument("--use_precomputed_reports", action='store_true', help="Use precomputed Kraken reports instead of running Kraken2.")
     parser.add_argument("--col_filter", type=str,nargs='+', help="Bacteria or virus name to be removed")
     parser.add_argument("--pat_to_keep", type=str,nargs='+', help="Bacteria or virus name to be kept")
-    parser.add_argument("--max_read_count", type=str,nargs='+', help="Maximum number of read counts")
+    parser.add_argument("--max_read_count", type=int, help="Maximum number of read counts")
     #parser.add_argument("--contigs_file", help="Path to a file containing paths to contig files for Kraken analysis.")
 
     args = parser.parse_args()
@@ -140,7 +140,7 @@ def main():
         sample_id_df = create_sample_id_df(args.input_dir)
         logging.info("Using sample IDs as metadata.")
         sample_id_df.to_csv(os.path.join(args.output_dir, "sample_ids.csv"), index=False)
-        merged_tsv_path = aggregate_kraken_results(args.output_dir, sample_id_df=sample_id_df, read_count=args.read_count,args.max_read_count)
+        merged_tsv_path = aggregate_kraken_results(args.output_dir, sample_id_df=sample_id_df, read_count=args.read_count,max_read_count=args.max_read_count)
     else:
         if not args.metadata_file:
             raise ValueError("Metadata file must be provided if --no_metadata is not specified.")
