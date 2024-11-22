@@ -163,7 +163,7 @@ def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep,max_r
         if pat_to_keep:
             df=df[df['Scientific_name'].isin(pat_to_keep)] 
         if max_read_count:
-            df=df[df['Nr_frag_direct_at_taxon']<=Nr_frag_direct_at_taxon]
+            df=df[df['Nr_frag_direct_at_taxon']<=max_read_count]
             
             
         # Generate both viral and bacterial abundance plots
