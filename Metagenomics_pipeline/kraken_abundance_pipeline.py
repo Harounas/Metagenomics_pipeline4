@@ -152,7 +152,7 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, 
         print(f"Error aggregating Kraken results: {e}")
         return None
 
-def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep):
+def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep,max_read_count=1000000000000):
     try:
         df = pd.read_csv(merged_tsv_path, sep="\t")
         df.columns = df.columns.str.replace('/', '_').str.replace(' ', '_')
@@ -162,6 +162,9 @@ def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep):
             df=df[~df['Scientific_name'].isin(col_filter)] 
         if pat_to_keep:
             df=df[df['Scientific_name'].isin(pat_to_keep)] 
+        if max_read_count:
+            df=df[df['Nr_frag_direct_at_taxon']<=Nr_frag_direct_at_taxon]
+            
             
         # Generate both viral and bacterial abundance plots
         for focus, filter_str, plot_title in [
