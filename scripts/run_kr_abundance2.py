@@ -55,7 +55,7 @@ def main():
     parser.add_argument("--use_precomputed_reports", action='store_true', help="Use precomputed Kraken reports instead of running Kraken2.")
     parser.add_argument("--col_filter", type=str,nargs='+', help="Bacteria or virus name to be removed")
     parser.add_argument("--pat_to_keep", type=str,nargs='+', help="Bacteria or virus name to be kept")
-    
+    parser.add_argument("--max_read_coun", type=str,nargs='+', help="Maximum number of read counts")
     #parser.add_argument("--contigs_file", help="Path to a file containing paths to contig files for Kraken analysis.")
 
     args = parser.parse_args()
@@ -147,16 +147,16 @@ def main():
         elif not os.path.isfile(args.metadata_file):
             logging.error(f"Metadata file '{args.metadata_file}' not found.")
             sys.exit(1)
-        merged_tsv_path = aggregate_kraken_results(args.output_dir, metadata_file=args.metadata_file, read_count=args.read_count)
+        merged_tsv_path = aggregate_kraken_results(args.output_dir, metadata_file=args.metadata_file, read_count=args.read_count,max_read_count=args.max_read_count)
 
     # Generate abundance plots based on provided flags
     if merged_tsv_path and os.path.isfile(merged_tsv_path):
         if args.virus:
             logging.info("Generating viral abundance plots.")
-            generate_abundance_plots(merged_tsv_path, args.top_N, args.col_filter,args.pat_to_keep)
+            generate_abundance_plots(merged_tsv_path, args.top_N, args.col_filter,args.pat_to_keep,args.max_read_count)
         elif args.bacteria:
             logging.info("Generating bacterial abundance plots.")
-            generate_abundance_plots(merged_tsv_path, args.top_N,args.col_filter,args.pat_to_keep)
+            generate_abundance_plots(merged_tsv_path, args.top_N,args.col_filter,args.pat_to_keep,args.max_read_count)
         else:
             logging.warning("No plot type specified. Use --virus or --bacteria to generate plots.")
 
