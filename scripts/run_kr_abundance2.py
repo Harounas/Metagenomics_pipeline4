@@ -147,7 +147,7 @@ def main():
         elif not os.path.isfile(args.metadata_file):
             logging.error(f"Metadata file '{args.metadata_file}' not found.")
             sys.exit(1)
-        merged_tsv_path = aggregate_kraken_results(args.output_dir, metadata_file=args.metadata_file, read_count=args.read_count,max_read_count=args.max_read_count)
+        merged_tsv_path = aggregate_kraken_results(args.output_dir, metadata_file=args.metadata_file, read_count=args.read_count)
 
     # Generate abundance plots based on provided flags
     if merged_tsv_path and os.path.isfile(merged_tsv_path):
