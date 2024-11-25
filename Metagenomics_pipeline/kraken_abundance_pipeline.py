@@ -131,7 +131,7 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, 
                                 aggregated_results[sampleandtaxonid] = {
                                     'Perc_frag_cover': perc_frag_cover,
                                     'Nr_frag_cover': nr_frag_cover,
-                                    'Read count': nr_frag_direct_at_taxon,
+                                    'nr_frag_direct_at_taxon': nr_frag_direct_at_taxon,
                                     'Rank_code': rank_code,
                                     'NCBI_ID': ncbi_ID,
                                     'Scientific_name': scientific_name,
