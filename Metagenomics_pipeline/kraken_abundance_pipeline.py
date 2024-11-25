@@ -131,7 +131,7 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, 
                                 aggregated_results[sampleandtaxonid] = {
                                     'Perc_frag_cover': perc_frag_cover,
                                     'Nr_frag_cover': nr_frag_cover,
-                                    'Nr_frag_direct_at_taxon': nr_frag_direct_at_taxon,
+                                    'Read count': nr_frag_direct_at_taxon,
                                     'Rank_code': rank_code,
                                     'NCBI_ID': ncbi_ID,
                                     'Scientific_name': scientific_name,
@@ -143,7 +143,7 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, 
         merged_tsv_path = os.path.join(kraken_dir, "merged_kraken.tsv")
         with open(merged_tsv_path, 'w') as f:
             # Write headers dynamically
-            headers = ['Perc_frag_cover', 'Nr_frag_cover', 'Nr_frag_direct_at_taxon', 'Rank_code', 'NCBI_ID', 'Scientific_name', 'SampleID'] + metadata.columns[1:].tolist()
+            headers = ['Perc_frag_cover', 'Nr_frag_cover', 'Read count', 'Rank_code', 'NCBI_ID', 'Scientific_name', 'SampleID'] + metadata.columns[1:].tolist()
             f.write("\t".join(headers) + "\n")
             for sampleandtaxonid, data in aggregated_results.items():
                 f.write("\t".join(str(data[col]) for col in headers) + "\n")
@@ -187,7 +187,7 @@ def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep):
             categorical_cols.remove(focus)
 
             for col in categorical_cols:
-                grouped_sum = df_focus.groupby([focus, col])['Nr_frag_direct_at_taxon'].mean().reset_index()
+                grouped_sum = df_focus.groupby([focus, col])['Read count'].mean().reset_index()
                 # Create a color mapping based on unique values in the 'focus' column
                 #colordict = dict(zip(grouped_sum[focus].unique(), distinctipy.get_colors(len(grouped_sum[focus].unique()))))
                 colordict = defaultdict(int)
@@ -251,7 +251,7 @@ def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep):
                 fig = px.bar(
                     grouped_sum,
                     x=col,
-                    y='Nr_frag_direct_at_taxon',
+                    y='Read count',
                     color=focus,
                     color_discrete_map=colordict,
                     title=f"{plot_title} Abundance by {col}"
