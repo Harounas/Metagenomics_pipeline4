@@ -174,8 +174,12 @@ def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep):
         ]:
             if focus == 'Bacteria_Type':
                 df_focus = df[~df['Scientific_name'].str.contains(filter_str, case=False, na=False)]
+                summary_csv_path = os.path.join("Bacteria_summary.csv")
+                grouped_sum.to_csv(summary_csv_path , index=False)
             else:
                 df_focus = df[df['Scientific_name'].str.contains(filter_str, case=False, na=False)]
+                summary_csv_path = os.path.join("Virus_summary.csv")
+                grouped_sum.to_csv(summary_csv_path , index=False)
             df_focus = df_focus.rename(columns={'Scientific_name': focus})
 
             if top_N:
