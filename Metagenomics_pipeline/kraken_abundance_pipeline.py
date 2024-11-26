@@ -77,7 +77,7 @@ def generate_sample_ids_csv(kraken_dir):
         print(f"Error generating sample_ids.csv: {e}")
         return None
         
-def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, read_count=1):
+def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, read_count=1,max_read_count=1000000000000):
     """
     Aggregates Kraken results, merging metadata or using sample IDs if metadata is not provided.
 
