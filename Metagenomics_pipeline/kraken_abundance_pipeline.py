@@ -255,7 +255,7 @@ def generate_abundance_plots(merged_tsv_path, top_N,col_filter,pat_to_keep):
                     color_discrete_map=colordict,
                     title=f"{plot_title} Abundance by {col}"
                 )
-                summary_csv_path = os.path.join(kraken_dir, f"{plot_title}_summary.csv")
+                summary_csv_path = os.path.join(f"{plot_title}_summary.csv")
                 grouped_sum.to_csv(summary_csv_path , index=False)
                 fig.update_layout(
                     xaxis=dict(tickfont=dict(size=font_size), tickangle=45),
