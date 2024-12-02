@@ -165,7 +165,7 @@ def main():
         else:
             logging.warning("No plot type specified. Use --virus or --bacteria to generate plots.")
  # Load the Kraken merged summary data
-    df = pd.read_csv(args.output_dir, sep='\t')
+    df = pd.read_csv(merged_tsv_path, sep='\t')
     
     # Filter for entries containing 'virus' in the 'Scientific_name' column
     df = df[df['Scientific_name'].str.contains('virus', case=False, na=False)]
