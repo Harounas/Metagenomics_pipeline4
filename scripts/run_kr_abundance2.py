@@ -4,7 +4,9 @@ import argparse
 import pandas as pd
 import sys
 from Metagenomics_pipeline.kraken_abundance_pipeline import process_sample, aggregate_kraken_results, generate_abundance_plots
+from Metagenomics_pipeline.ref_based_assembly import ref_based
 import logging
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -56,6 +58,8 @@ def main():
     parser.add_argument("--col_filter", type=str,nargs='+', help="Bacteria or virus name to be removed")
     parser.add_argument("--pat_to_keep", type=str,nargs='+', help="Bacteria or virus name to be kept")
     parser.add_argument("--max_read_count", type=int,default=5000000000, help="Maximum number of read counts")
+    # Add argument for running the additional pipeline
+    parser.add_argument("--run_ref_base", action="store_true", help="Run the additional processing pipeline for each taxon (BWA, Samtools, BCFtools, iVar)")
     #parser.add_argument("--max_read_count", type=int,default=None, help="Maximum number of read counts")
     #parser.add_argument("--contigs_file", help="Path to a file containing paths to contig files for Kraken analysis.")
 
@@ -160,6 +164,18 @@ def main():
             generate_abundance_plots(merged_tsv_path, args.top_N,args.col_filter,args.pat_to_keep)
         else:
             logging.warning("No plot type specified. Use --virus or --bacteria to generate plots.")
+ # Load the Kraken merged summary data
+    df = pd.read_csv(args.output_dir, sep='\t')
+    
+    # Filter for entries containing 'virus' in the 'Scientific_name' column
+    df = df[df['Scientific_name'].str.contains('virus', case=False, na=False)]
+    df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
+
+    # Optional step: Run additional processing if flag is set
+    if args.run_ref_base:
+        print("Running ref based assemby pipeline...")
+        ref_based(df,run_bowtie)
+
 
 if __name__ == "__main__":
     main()
