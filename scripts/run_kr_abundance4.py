@@ -173,8 +173,13 @@ def main():
 
     # Optional step: Run additional processing if flag is set
     if args.run_ref_base:
-        print("Running ref based assemby pipeline...")
-        ref_based(df,run_bowtie,input_dir=args.output_dir, base_dir="fasta_files")
+     logging.info(f"Starting reference-based pipeline with Kraken output directory: {args.output_dir}")
+     ref_based(
+        df=df,
+        run_bowtie=run_bowtie,
+        input_dir=args.output_dir,
+        base_dir="fasta_files"
+    )
 
 
 if __name__ == "__main__":
