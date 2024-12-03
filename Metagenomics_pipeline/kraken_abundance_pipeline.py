@@ -66,7 +66,7 @@ def generate_sample_ids_csv(kraken_dir):
                 sample_ids.append(sample_id)
 
         # Save sample IDs to CSV
-        sampleid_df = pd.DataFrame(sample_ids, columns=['Sample ID'])
+        sampleid_df = pd.DataFrame(sample_ids, columns=['Sample_IDs'])
         sampleid_csv_path = os.path.join(kraken_dir, "sample_ids.csv")
         sampleid_df.to_csv(sampleid_csv_path, index=False)
         
