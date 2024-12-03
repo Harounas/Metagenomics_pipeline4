@@ -176,7 +176,7 @@ def main():
     if args.run_ref_base:
      logging.info(f"Starting reference-based pipeline with Kraken output directory: {args.output_dir}")
      ref_based(df=df,
-        run_bowtie,args.fastq_dir,
+        args.no_bowtie2,args.fastq_dir,
         base_dir="fasta_files"
     )
 
