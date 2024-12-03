@@ -120,7 +120,7 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None, 
                         ncbi_ID = fields[4]
                         scientific_name = fields[5]
                         parts = file_name.split('_')
-                        extracted_part = '_'.join(parts[:-1])
+                        extracted_part = '_'.join(parts[:-2])
                         sampleandtaxonid = extracted_part + str(ncbi_ID)
 
                         # Check if rank code is species-level and meets the read count threshold
