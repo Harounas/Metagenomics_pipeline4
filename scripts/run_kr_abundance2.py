@@ -22,7 +22,7 @@ def create_sample_id_df(input_dir):
         sample_id = sample_id.replace("_R1_001", "").replace("_R1", "")  # For cases without ".fastq"
         sample_ids.append(sample_id)
 
-    sample_id_df = pd.DataFrame(sample_ids, columns=["Sample ID"])
+    sample_id_df = pd.DataFrame(sample_ids, columns=["Sample_IDs"])
     return sample_id_df
 
 def read_contig_files(contig_file):
@@ -163,4 +163,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
