@@ -35,7 +35,7 @@ def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output
             kraken_report = run_kraken2(unmapped_r1, unmapped_r2, base_name, kraken_db, output_dir, threads)
         else:
             # Use the precomputed Kraken2 report
-            kraken_report = os.path.join(output_dir, f"{base_name}_report.txt")
+            kraken_report = os.path.join(output_dir, f"{base_name}_kraken_report.txt")
             if not os.path.exists(kraken_report):
                 raise FileNotFoundError(f"Precomputed Kraken2 report not found: {kraken_report}")
 
@@ -62,7 +62,7 @@ def generate_sample_ids_csv(kraken_dir):
         sample_ids = []
         for file_name in os.listdir(kraken_dir):
             if file_name.endswith("_report.txt"):
-                sample_id = '_'.join(file_name.split('_')[:-1])
+                sample_id = '_'.join(file_name.split('_')[:-2])
                 sample_ids.append(sample_id)
 
         # Save sample IDs to CSV
