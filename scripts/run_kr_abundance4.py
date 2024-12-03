@@ -174,7 +174,7 @@ def main():
     # Optional step: Run additional processing if flag is set
     if args.run_ref_base:
         print("Running ref based assemby pipeline...")
-        ref_based(df,run_bowtie,input_dir=f'{output_dir}, base_dir="fasta_files")
+        ref_based(df,run_bowtie,input_dir=f"{output_dir}", base_dir="fasta_files")
 
 
 if __name__ == "__main__":
