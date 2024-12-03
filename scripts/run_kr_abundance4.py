@@ -175,8 +175,8 @@ def main():
     # Optional step: Run additional processing if flag is set
     if args.run_ref_base:
      logging.info(f"Starting reference-based pipeline with Kraken output directory: {args.output_dir}")
-     ref_based(
-        df=df,args.fastq_dir,
+     ref_based(args.fastq_dir,
+        df=df,
         run_bowtie,
         base_dir="fasta_files"
     )
