@@ -2,7 +2,7 @@ import os
 import subprocess
 import pandas as pd
 
-def ref_based(df,run_bowtie,base_dir="fasta_files"):
+def ref_based(df,run_bowtie,input_dir,base_dir="fasta_files"):
     """Run the additional processing pipeline for BWA, Samtools, BCFtools, and iVar."""
     
     # Get unique tax IDs
@@ -45,11 +45,11 @@ def ref_based(df,run_bowtie,base_dir="fasta_files"):
         # BWA and other commands for each sample
         for sample in samplelist:
             if run_bowtie:
-                sample_r1 = f"{sample}_unmapped_reads.1.fastq.gz"  # Path to R1 FASTQ file
-                sample_r2 = f"{sample}_unmapped_reads.2.fastq.gz"  # Path to R2 FASTQ file
+                sample_r1 = f"{input_dir}/{sample}_unmapped_reads.1.fastq.gz"  # Path to R1 FASTQ file
+                sample_r2 = f"{input_dir}/{sample}_unmapped_reads.2.fastq.gz"  # Path to R2 FASTQ file
             else:
-                sample_r1 = f"{sample}_trimmed_R1.fastq.gz"  # Path to trimmed R1 FASTQ file
-                sample_r2 = f"{sample}_trimmed_R2.fastq.gz"  # Path to trimmed R2 FASTQ file
+                sample_r1 = f"{input_dir}/{sample}_trimmed_R1.fastq.gz"  # Path to trimmed R1 FASTQ file
+                sample_r2 = f"{input_dir}/{sample}_trimmed_R2.fastq.gz"  # Path to trimmed R2 FASTQ file
                 
                 
             sample_dir = f"{sample}_assembled1"
