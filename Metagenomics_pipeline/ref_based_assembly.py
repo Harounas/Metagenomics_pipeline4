@@ -2,7 +2,7 @@ import os
 import subprocess
 import pandas as pd
 
-def ref_based(df,input_dir,run_bowtie,base_dir="fasta_files"):
+def ref_based(df,run_bowtie,input_dir,base_dir="fasta_files"):
     """Run the additional processing pipeline for BWA, Samtools, BCFtools, and iVar."""
     
     # Get unique tax IDs
