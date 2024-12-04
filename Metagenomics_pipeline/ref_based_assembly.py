@@ -44,13 +44,13 @@ def ref_based(df,run_bowtie,input_dir):
 
         # BWA and other commands for each sample
         for sample in samplelist:
+       
             if run_bowtie:
-                sample_r1 = f"{input_dir}/{sample}_unmapped_reads.1.fastq.gz"  # Path to R1 FASTQ file
-                sample_r2 = f"{input_dir}/{sample}_unmapped_reads.2.fastq.gz"  # Path to R2 FASTQ file
+               sample_r1 = os.path.join(input_dir, f"{sample}_unmapped_1.fastq.gz")  # Path to R1 FASTQ file
+               sample_r2 = os.path.join(input_dir, f"{sample}_unmapped_2.fastq.gz")  # Path to R2 FASTQ file
             else:
-                sample_r1 = f"{input_dir}/{sample}_trimmed_R1.fastq.gz"  # Path to trimmed R1 FASTQ file
-                sample_r2 = f"{input_dir}/{sample}_trimmed_R2.fastq.gz"  # Path to trimmed R2 FASTQ file
-                
+               sample_r1 = os.path.join(input_dir, f"{sample}_trimmed_R1.fastq.gz")  # Path to trimmed R1 FASTQ file
+               sample_r2 = os.path.join(input_dir, f"{sample}_trimmed_R2.fastq.gz")  # Path to trimmed R2 FASTQ file    
                 
             sample_dir = f"{sample}_assembled1"
             os.makedirs(sample_dir, exist_ok=True)
