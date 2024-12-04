@@ -62,7 +62,7 @@ def ref_based(df,run_bowtie,input_dir):
             consensus_file = os.path.join(sample_dir, f"{sample}_{Refname}_consensus_genome.fasta")
 
             # BWA MEM: Align reads to the reference genome
-            bwa_command = f"bwa mem -a -t 16 {Ref} {sample_r1} {sample_r2} | samtools view -u -@ 3 - | samtools sort -@ 16 -o {bam_file}"
+            bwa_command = f"bwa mem -a -t 16 {Ref} {input_dir}/{sample_r1} {input_dir}/{sample_r2} | samtools view -u -@ 3 - | samtools sort -@ 16 -o {bam_file}"
             print(f"Running BWA command: {bwa_command}")
             subprocess.run(bwa_command, shell=True, check=True)
 
