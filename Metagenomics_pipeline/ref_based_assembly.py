@@ -46,6 +46,8 @@ def ref_based(df,run_bowtie,input_dir):
         for sample in samplelist:
        
             if run_bowtie:
+               print(sample_r1)
+               print(f'{input_dir} input dir')
                sample_r1 = os.path.join(input_dir, f"{sample}_unmapped_1.fastq.gz")  # Path to R1 FASTQ file
                sample_r2 = os.path.join(input_dir, f"{sample}_unmapped_2.fastq.gz")  # Path to R2 FASTQ file
             else:
