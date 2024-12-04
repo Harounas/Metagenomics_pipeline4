@@ -2,13 +2,13 @@ import os
 import subprocess
 import pandas as pd
 
-def ref_based(df,run_bowtie,input_dir,base_dir):
+def ref_based(df,run_bowtie,input_dir):
     """Run the additional processing pipeline for BWA, Samtools, BCFtools, and iVar."""
     
     # Get unique tax IDs
     taxids = df['NCBI_ID'].unique()
     os.makedirs(base_dir, exist_ok=True)  # Create the base directory if it doesn't exist
-
+    base_dir="Fasta_files"
     # Iterate over tax IDs
     for tax in taxids:
         # Filter DataFrame for the current tax ID
