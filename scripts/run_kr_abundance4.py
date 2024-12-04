@@ -60,7 +60,7 @@ def main():
     parser.add_argument("--max_read_count", type=int,default=5000000000, help="Maximum number of read counts")
     # Add argument for running the additional pipeline
     parser.add_argument("--run_ref_base", action="store_true", help="Run the additional processing pipeline for each taxon (BWA, Samtools, BCFtools, iVar)")
-    #parser.add_argument("--fastq_dir", type=str, required=True, help="Fastq files directory.")
+    parser.add_argument("--fastq_dir", type=str, required=True, help="Fastq files directory.")
     #parser.add_argument("--fasta_dir", type=str, required=True, help=" Directory to save fasta files.")
     #parser.add_argument("--max_read_count", type=int,default=None, help="Maximum number of read counts")
     #parser.add_argument("--contigs_file", help="Path to a file containing paths to contig files for Kraken analysis.")
