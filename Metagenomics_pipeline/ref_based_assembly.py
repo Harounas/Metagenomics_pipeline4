@@ -46,14 +46,15 @@ def ref_based(df,run_bowtie,input_dir):
         for sample in samplelist:
        
             if run_bowtie:
-               print(sample_r1)
-               print(f'{input_dir} input dir')
                sample_r1 = os.path.join(input_dir, f"{sample}_unmapped_1.fastq.gz")  # Path to R1 FASTQ file
                sample_r2 = os.path.join(input_dir, f"{sample}_unmapped_2.fastq.gz")  # Path to R2 FASTQ file
             else:
                sample_r1 = os.path.join(input_dir, f"{sample}_trimmed_R1.fastq.gz")  # Path to trimmed R1 FASTQ file
                sample_r2 = os.path.join(input_dir, f"{sample}_trimmed_R2.fastq.gz")  # Path to trimmed R2 FASTQ file    
-                
+            
+            
+            print(sample_r1)
+            print(f'{input_dir} input dir') 
             sample_dir = f"{sample}_assembled1"
             os.makedirs(sample_dir, exist_ok=True)
             bam_file = os.path.join(sample_dir, f"{sample}_{Refname}_mapped_reads.bam")
