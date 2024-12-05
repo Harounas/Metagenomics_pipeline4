@@ -45,6 +45,7 @@ def main():
     parser.add_argument("--pat_to_keep", type=str, nargs='+', help="List of taxa to include.")
     parser.add_argument("--max_read_count", type=int, default=5000000000, help="Maximum read count.")
     parser.add_argument("--run_ref_base", action="store_true", help="Run reference-based pipeline.")
+    parser.add_argument("--fastq_path", type=str, help="Explicit path to FASTQ files for reference-based analysis.")
     args = parser.parse_args()
 
     # Create output directory if it doesn't exist
@@ -95,12 +96,29 @@ def main():
             generate_abundance_plots(merged_tsv_path, args.top_N, args.col_filter, args.pat_to_keep)
 
     # Run reference-based pipeline
+    # Run reference-based pipeline
     if args.run_ref_base:
+        if args.fastq_path:
+            logging.info(f"Using FASTQ files from explicitly provided path: {args.fastq_path}")
+            forward = os.path.join(args.fastq_path, "*_R1*.fastq*")
+            reverse = os.path.join(args.fastq_path, "*_R2*.fastq*")
+        else:
+            logging.info("Using FASTQ files from the input directory.")
+            forward = os.path.join(args.input_dir, "*_R1*.fastq*")
+            reverse = os.path.join(args.input_dir, "*_R2*.fastq*")
+
+        # Verify if files exist
+        forward_files = glob.glob(forward)
+        reverse_files = glob.glob(reverse)
+        if not forward_files or not reverse_files:
+            logging.error("No FASTQ files found for reference-based pipeline. Exiting.")
+            sys.exit(1)
+
         logging.info("Running reference-based pipeline.")
         df = pd.read_csv(merged_tsv_path, sep='\t')
         df = df[df['Scientific_name'].str.contains('virus', case=False, na=False)]
         df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
-        ref_based(df, run_bowtie, args.output_dir)
+        ref_based(df, run_bowtie, args.output_dir, forward_files, reverse_files)
 
-if __name__ == "__main__":
-    main()
+    if __name__ == "__main__":
+        main()
