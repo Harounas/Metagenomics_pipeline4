@@ -70,11 +70,11 @@ def ref_based(df, run_bowtie, input_dir):
             print(f"Sample R1: {sample_r1}")
             print(f"Sample R2: {sample_r2}")
 
-            sample_dir = f"{sample}_assembled2"
+            sample_dir = f"{scientific_name}_assembled1"
             os.makedirs(sample_dir, exist_ok=True)
             bam_file = os.path.join(sample_dir, f"{sample}_{Refname}_mapped_reads.bam")
             vcf_file = os.path.join(sample_dir, f"{sample}_{Refname}_variants.vcf")
-            consensus_file = os.path.join(sample_dir, f"{sample}_{Refname}_consensus_genome.fasta")
+            consensus_file = os.path.join(sample_dir, f"{sample}_{Refname}_consensus_genome.fa")
 
             # BWA MEM: Align reads to the reference genome
             bwa_command = f"bwa mem -a -t 16 {Ref} {sample_r1} {sample_r2} | samtools view -u -@ 3 - | samtools sort -@ 16 -o {bam_file}"
