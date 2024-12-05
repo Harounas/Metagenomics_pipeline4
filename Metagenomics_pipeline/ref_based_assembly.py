@@ -70,7 +70,7 @@ def ref_based(df, run_bowtie, input_dir):
             print(f"Sample R1: {sample_r1}")
             print(f"Sample R2: {sample_r2}")
 
-            sample_dir = f"{sample}_assembled"
+            sample_dir = f"{sample}_assembled2"
             os.makedirs(sample_dir, exist_ok=True)
             bam_file = os.path.join(sample_dir, f"{sample}_{Refname}_mapped_reads.bam")
             vcf_file = os.path.join(sample_dir, f"{sample}_{Refname}_variants.vcf")
