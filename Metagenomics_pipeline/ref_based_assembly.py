@@ -47,9 +47,11 @@ def ref_based(df, run_bowtie, input_dir):
         # Get the list of sample IDs for the current tax ID
         samplelist = dftax['SampleID'].tolist()
         print(f"Sample list for tax ID {tax} ({scientific_name}): {samplelist}")
+        print(f"DEBUG: Sample list contains {len(samplelist)} samples.")
 
         # BWA and other commands for each sample
         for sample in samplelist:
+            print(f"DEBUG: Processing sample: {sample}")  
             # Construct file paths for R1 and R2 based on `run_bowtie` flag
             if run_bowtie:
                 sample_r1 = os.path.join(args.input_dir,f"{sample}_unmapped_1.fastq.gz")
