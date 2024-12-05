@@ -1,14 +1,20 @@
-import os
-import subprocess
-import pandas as pd
+def ref_based(df, run_bowtie, input_dir):
+    """
+    Run the additional processing pipeline for BWA, Samtools, BCFtools, and iVar.
 
-def ref_based(df,run_bowtie,input_dir):
-    """Run the additional processing pipeline for BWA, Samtools, BCFtools, and iVar."""
+    Parameters:
+    - df: pandas.DataFrame containing information about samples and tax IDs.
+    - run_bowtie: bool, whether to use Bowtie-derived FASTQ files or trimmed FASTQ files.
+    - input_dir: str, the directory containing the input FASTQ files.
+    """
     
+    # Define base directory for output FASTA files
+    base_dir = "Fasta_files"
+    os.makedirs(base_dir, exist_ok=True)  # Create the base directory if it doesn't exist
+
     # Get unique tax IDs
     taxids = df['NCBI_ID'].unique()
-    os.makedirs(base_dir, exist_ok=True)  # Create the base directory if it doesn't exist
-    base_dir="Fasta_files"
+
     # Iterate over tax IDs
     for tax in taxids:
         # Filter DataFrame for the current tax ID
@@ -44,17 +50,18 @@ def ref_based(df,run_bowtie,input_dir):
 
         # BWA and other commands for each sample
         for sample in samplelist:
-       
+            # Construct file paths for R1 and R2 based on `run_bowtie` flag
             if run_bowtie:
-               sample_r1 = os.path.join(input_dir, f"{sample}_unmapped_1.fastq.gz")  # Path to R1 FASTQ file
-               sample_r2 = os.path.join(input_dir, f"{sample}_unmapped_2.fastq.gz")  # Path to R2 FASTQ file
+                sample_r1 = f"{input_dir}/{sample}_unmapped_1.fastq.gz"
+                sample_r2 = f"{input_dir}/{sample}_unmapped_2.fastq.gz"
             else:
-               sample_r1 = os.path.join(input_dir, f"{sample}_trimmed_R1.fastq.gz")  # Path to trimmed R1 FASTQ file
-               sample_r2 = os.path.join(input_dir, f"{sample}_trimmed_R2.fastq.gz")  # Path to trimmed R2 FASTQ file    
-            
-            
-            print(sample_r1)
-            print(f'{input_dir} input dir') 
+                sample_r1 = f"{input_dir}/{sample}_trimmed_R1.fastq.gz"
+                sample_r2 = f"{input_dir}/{sample}_trimmed_R2.fastq.gz"
+
+            # Debugging: Print paths to ensure correctness
+            print(f"Sample R1: {sample_r1}")
+            print(f"Sample R2: {sample_r2}")
+
             sample_dir = f"{sample}_assembled1"
             os.makedirs(sample_dir, exist_ok=True)
             bam_file = os.path.join(sample_dir, f"{sample}_{Refname}_mapped_reads.bam")
@@ -62,7 +69,7 @@ def ref_based(df,run_bowtie,input_dir):
             consensus_file = os.path.join(sample_dir, f"{sample}_{Refname}_consensus_genome.fasta")
 
             # BWA MEM: Align reads to the reference genome
-            bwa_command = f"bwa mem -a -t 16 {Ref} {input_dir}/{sample_r1} {input_dir}/{sample_r2} | samtools view -u -@ 3 - | samtools sort -@ 16 -o {bam_file}"
+            bwa_command = f"bwa mem -a -t 16 {Ref} {sample_r1} {sample_r2} | samtools view -u -@ 3 - | samtools sort -@ 16 -o {bam_file}"
             print(f"Running BWA command: {bwa_command}")
             subprocess.run(bwa_command, shell=True, check=True)
 
