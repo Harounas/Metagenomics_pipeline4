@@ -115,7 +115,7 @@ def main():
 
     if args.run_ref_base:
         logging.info(f"Starting reference-based pipeline.")
-        ref_based(df, run_bowtie, args.input_dir)
+        ref_based(df, run_bowtie, args.output_dir)
 
 
 if __name__ == "__main__":
