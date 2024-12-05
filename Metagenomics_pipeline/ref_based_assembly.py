@@ -60,17 +60,17 @@ def ref_based(df, run_bowtie, input_dir):
             print(f"DEBUG: Processing sample: {sample}")  
             # Construct file paths for R1 and R2 based on `run_bowtie` flag
             if run_bowtie:
-                sample_r1 = os.path.join(args.input_dir,f"{sample}_unmapped_1.fastq.gz")
-                sample_r2 =  os.path.join(args.input_dir,f"{sample}_unmapped_2.fastq.gz")
+                sample_r1 = os.path.join(input_dir,f"{sample}_unmapped_1.fastq.gz")
+                sample_r2 =  os.path.join(input_dir,f"{sample}_unmapped_2.fastq.gz")
             else:
-                sample_r1 = os.path.join(args.input_dir,f"{sample}_trimmed_R1.fastq.gz")
-                sample_r2 = os.path.join(args.input_dir,f"{sample}_trimmed_R2.fastq.gz")
+                sample_r1 = os.path.join(input_dir,f"{sample}_trimmed_R1.fastq.gz")
+                sample_r2 = os.path.join(input_dir,f"{sample}_trimmed_R2.fastq.gz")
 
             # Debugging: Print paths to ensure correctness
             print(f"Sample R1: {sample_r1}")
             print(f"Sample R2: {sample_r2}")
 
-            sample_dir = f"{sample}_assembled1"
+            sample_dir = f"{sample}_assembled"
             os.makedirs(sample_dir, exist_ok=True)
             bam_file = os.path.join(sample_dir, f"{sample}_{Refname}_mapped_reads.bam")
             vcf_file = os.path.join(sample_dir, f"{sample}_{Refname}_variants.vcf")
