@@ -52,8 +52,10 @@ def ref_based(df, run_bowtie, input_dir):
         samplelist = dftax['SampleID'].tolist()
         print(f"Sample list for tax ID {tax} ({scientific_name}): {samplelist}")
         print(f"DEBUG: Sample list contains {len(samplelist)} samples.")
-
-        # BWA and other commands for each sample
+        bwa_ref= f"bwa index {Ref}"
+        print(f"Running BWA for reference indexing: {bwa_ref}")
+        subprocess.run(bwa_ref, shell=True, check=True)
+      # BWA and other commands for each sample
         for sample in samplelist:
             print(f"DEBUG: Processing sample: {sample}")  
             # Construct file paths for R1 and R2 based on `run_bowtie` flag
