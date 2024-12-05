@@ -1,3 +1,8 @@
+import os
+import subprocess
+from Bio import SeqIO
+import pandas as pd
+
 def ref_based(df, run_bowtie, input_dir):
     """
     Ref-based pipeline with consensus genome polishing and denovo assembly.
