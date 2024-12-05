@@ -20,6 +20,11 @@ def ref_based(df, run_bowtie, input_dir):
     taxids = df['NCBI_ID'].unique()
 
     # Iterate over tax IDs
+    df['Ref_len'] =""
+    df['Consensus_len']=""
+    df['Completness(%)']=""
+    dfs = []
+
     for tax in taxids:
         # Filter DataFrame for the current tax ID
         dftax = df[df['NCBI_ID'] == tax]
@@ -95,3 +100,30 @@ def ref_based(df, run_bowtie, input_dir):
             ivar_command = f"samtools mpileup  -aa -A -d 0 -Q 0 -f {Ref} {bam_file} | ivar consensus -p {consensus_file}"
             print(f"Running iVar command: {ivar_command}")
             subprocess.run(ivar_command, shell=True, check=True)
+            def calculate_genome_length(fasta_file):
+           # Command to calculate genome length (valid nucleotides only: A, C, T, G)
+               command = f"grep -v '^>' {fasta_file} | tr -d '\\n' | tr -cd 'ACTG' | wc -c"
+               result = subprocess.run(command, shell=True, capture_output=True, text=True)
+               return int(result.stdout.strip())
+             # Calculate lengths
+            try:
+             ref_genome_len = calculate_genome_length(Ref)
+             consensus_genome_len = calculate_genome_length(consensus_file)
+
+             print(f"{consensus_file} my consensus")    
+   # Save lengths to a text file
+             with open(f"{sample_dir}/{sample}_{Refname}.txt", "w") as f:
+              f.write(f"Reference Genome Length: {ref_genome_len} bp\n")
+              f.write(f"Consensus Genome Length: {consensus_genome_len} bp\n")
+
+        # print(f"Genome lengths saved to: {output_file}")
+            except Exception as e:
+             print(f"Error calculating genome lengths: {e}")
+ 
+        # Add a new column and conditionally set values
+        dftax['Ref_len'] = dftax.apply(lambda row: ref_genome_len if row['NCBI_ID'] == tax and row['SampleID'] == sample else row['Ref_len'],axis=1)
+        dftax['Consensus_len'] = dftax.apply(lambda row: consensus_genome_len if row['NCBI_ID'] == tax and row['SampleID'] == sample else row['Consensus_len'], axis=1)
+        dftax['Completness%'] = dftax.apply(lambda row:f"{consensus_genome_len / ref_genome_len:.2f}" if row['NCBI_ID'] == tax and row['SampleID'] == sample else row['Completness%'], axis=1) 
+
+merged_df = pd.concat(dfs, ignore_index=True)
+merged_df.to_csv("Output-summary.csv", index=False)
