@@ -17,14 +17,6 @@ logging.basicConfig(
 def download_and_index_reference(tax, scientific_name, tax_dir):
     """
     Download and index the reference genome for a given taxonomic ID.
-
-    Parameters:
-    tax (str): Taxonomic ID.
-    scientific_name (str): Scientific name of the organism.
-    tax_dir (str): Directory to store reference files.
-
-    Returns:
-    str: Path to the indexed FASTA file, or None if failed.
     """
     fasta_file = os.path.join(tax_dir, f"{scientific_name}.fasta")
     command = f'esearch -db nucleotide -query "txid{tax}[Organism]" | efilter -source refseq | efetch -format fasta > {fasta_file}'
@@ -41,15 +33,6 @@ def download_and_index_reference(tax, scientific_name, tax_dir):
 def run_denovo_assembly(sample, sample_r1, sample_r2, output_dir):
     """
     Run de novo assembly using MetaSPAdes.
-
-    Parameters:
-    sample (str): Sample ID.
-    sample_r1 (str): Path to forward reads.
-    sample_r2 (str): Path to reverse reads.
-    output_dir (str): Directory to store de novo assembly results.
-
-    Returns:
-    str: Path to the contigs file, or None if failed.
     """
     contigs_file = os.path.join(output_dir, "contigs.fasta")
     if os.path.exists(contigs_file):
@@ -74,16 +57,6 @@ def run_denovo_assembly(sample, sample_r1, sample_r2, output_dir):
 def align_reads_to_reference(fasta_file, sample_r1, sample_r2, output_dir, sample):
     """
     Align reads to a reference genome using BWA-MEM.
-
-    Parameters:
-    fasta_file (str): Path to the reference genome.
-    sample_r1 (str): Path to forward reads.
-    sample_r2 (str): Path to reverse reads.
-    output_dir (str): Directory to store BAM files.
-    sample (str): Sample ID.
-
-    Returns:
-    str: Path to the sorted BAM file, or None if failed.
     """
     bam_file = os.path.join(output_dir, f"{sample}_mapped_reads.bam")
     command = f"bwa mem -t 16 {fasta_file} {sample_r1} {sample_r2} | samtools sort -o {bam_file}"
@@ -102,44 +75,17 @@ def align_reads_to_reference(fasta_file, sample_r1, sample_r2, output_dir, sampl
     logging.info(f"Alignment completed for {sample}: {bam_file}")
     return bam_file
 
-def calculate_completeness(fasta_file, consensus_file):
+def calculate_genome_length(fasta_file):
     """
-    Calculate genome completeness based on the lengths of valid ACTG bases in the reference and consensus genomes.
-
-    Parameters:
-    fasta_file (str): Path to the reference genome.
-    consensus_file (str): Path to the consensus genome.
-
-    Returns:
-    tuple: Reference length (ACTG only), consensus length (ACTG only), and completeness percentage.
+    Calculate the genome length based on valid ACTG nucleotides in a FASTA file.
     """
-    try:
-        # Count valid ACTG bases in the reference genome
-        ref_command = f"grep -v '^>' {fasta_file} | tr -d '\\n' | tr -cd 'ACTG' | wc -c"
-        ref_len = int(subprocess.check_output(ref_command, shell=True).strip())
-        
-        # Count valid ACTG bases in the consensus genome
-        consensus_command = f"grep -v '^>' {consensus_file} | tr -d '\\n' | tr -cd 'ACTG' | wc -c"
-        consensus_len = int(subprocess.check_output(consensus_command, shell=True).strip())
-        
-        # Calculate completeness percentage
-        completeness = (consensus_len / ref_len) * 100 if ref_len > 0 else 0
-        return ref_len, consensus_len, completeness
-    except Exception as e:
-        logging.error(f"Error calculating completeness: {e}")
-        return 0, 0, 0
+    command = f"grep -v '^>' {fasta_file} | tr -d '\\n' | tr -cd 'ACTG' | wc -c"
+    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    return int(result.stdout.strip())
 
 def ref_based(df, run_bowtie, input_dir):
     """
-    Ref-based pipeline with consensus genome polishing and de novo assembly.
-
-    Parameters:
-    df (pd.DataFrame): DataFrame containing sample metadata.
-    run_bowtie (bool): Whether to process unmapped reads (True) or trimmed reads (False).
-    input_dir (str): Path to input directory containing reads.
-
-    Returns:
-    pd.DataFrame: Updated DataFrame with genome statistics.
+    Run a reference-based pipeline with consensus genome creation.
     """
     df['Ref_len'] = ""
     df['Consensus_len'] = ""
@@ -167,23 +113,20 @@ def ref_based(df, run_bowtie, input_dir):
             if not bam_file:
                 continue
 
-            denovo_output_dir = os.path.join(input_dir, f"{sample}_denovo")
-            denovo_contigs = run_denovo_assembly(sample, sample_r1, sample_r2, denovo_output_dir)
-            if not denovo_contigs:
-                continue
-
-            # Further steps: Polishing, consensus genome creation, etc.
             consensus_file = os.path.join(sample_dir, f"{sample}_consensus_genome.fa")
-            ref_len, consensus_len, completeness = calculate_completeness(fasta_file, consensus_file)
-            logging.info(f"Sample {sample}: Ref_len={ref_len}, Consensus_len={consensus_len}, Completeness={completeness:.2f}%")
+            try:
+                ref_len = calculate_genome_length(fasta_file)
+                consensus_len = calculate_genome_length(consensus_file)
+                completeness = (consensus_len / ref_len) * 100 if ref_len > 0 else 0
 
-            dftax.loc[dftax['SampleID'] == sample, 'Ref_len'] = ref_len
-            dftax.loc[dftax['SampleID'] == sample, 'Consensus_len'] = consensus_len
-            dftax.loc[dftax['SampleID'] == sample, 'Completeness(%)'] = f"{completeness:.2f}"
+                dftax.loc[dftax['SampleID'] == sample, 'Ref_len'] = ref_len
+                dftax.loc[dftax['SampleID'] == sample, 'Consensus_len'] = consensus_len
+                dftax.loc[dftax['SampleID'] == sample, 'Completeness(%)'] = f"{completeness:.2f}"
+            except Exception as e:
+                logging.error(f"Error calculating lengths for {sample}: {e}")
 
         dfs.append(dftax)
 
-    merged_df = pd.concat(dfs).reset_index(drop=True)
-    
-    merged_df.to_csv(f"{input_dir}/all-summary_len.csv", index=False)
-    return merged_df
+    merged_df = pd.concat(dfs, ignore_index=True)
+    merged_df.to_csv(f"{input_dir}/summary_genome_stats.csv", index=False)
+    logging.info(f"Pipeline completed. Results saved to: {input_dir}/summary_genome_stats.csv")
