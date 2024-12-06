@@ -34,7 +34,7 @@ def run_denovo_assembly(sample, sample_r1, sample_r2, output_dir):
     """
     Run de novo assembly using MetaSPAdes.
     """
-    contigs_file = os.path.join({output_dir}/{sample}_denovo, "contigs.fasta")
+    contigs_file = os.path.join(f"{output_dir}/{sample}_denovo", "contigs.fasta")
     if os.path.exists(contigs_file):
         logging.info(f"De novo assembly already exists for {sample}. Skipping.")
         return contigs_file
