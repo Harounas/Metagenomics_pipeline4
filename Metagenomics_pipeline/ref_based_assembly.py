@@ -53,14 +53,14 @@ def ref_based(df, run_bowtie, input_dir):
             sample_r1 = os.path.join(input_dir, f"{sample}_unmapped_1.fastq.gz") if run_bowtie else os.path.join(input_dir, f"{sample}_trimmed_R1.fastq.gz")
             sample_r2 = os.path.join(input_dir, f"{sample}_unmapped_2.fastq.gz") if run_bowtie else os.path.join(input_dir, f"{sample}_trimmed_R2.fastq.gz")
 
-            sample_dir = os.path.join(tax_dir, f"{sample}_assembled")
+            sample_dir = os.path.join(tax_dir, f"{scientific_name}_assembled")
             os.makedirs(sample_dir, exist_ok=True)
 
             bam_file = os.path.join(sample_dir, f"{sample}_mapped_reads.bam")
             consensus_file = os.path.join(sample_dir, f"{sample}_consensus_genome.fa")
 
             # Denovo assembly using metaspades
-            denovo_output_dir = os.path.join(sample_dir, f"{sample}_denovo")
+            denovo_output_dir = os.path.join(input_dir,f"{sample}_denovo")
             denovo_command = f"metaspades.py -1 {sample_r1} -2 {sample_r2} -o {denovo_output_dir} -t 32"
             try:
                 print(f"Running denovo assembly: {denovo_command}")
