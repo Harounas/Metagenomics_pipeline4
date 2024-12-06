@@ -94,13 +94,19 @@ def generate_consensus_genome(fasta_file, bam_file, consensus_file):
     logging.info(f"Consensus genome generated: {consensus_file}")
     return consensus_file
 
-
-
 def calculate_genome_length(fasta_file):
-           # Command to calculate genome length (valid nucleotides only: A, C, T, G)
-               command = f"grep -v '^>' {fasta_file} | tr -d '\\n' | tr -cd 'ACTG' | wc -c"
-               result = subprocess.run(command, shell=True, capture_output=True, text=True)
-               return int(result.stdout.strip())
+    """
+    Calculate the genome length by counting valid nucleotides (A, C, T, G).
+    """
+    valid_nucleotides = {'A', 'C', 'T', 'G'}
+    total_length = 0
+
+    for record in SeqIO.parse(fasta_file, "fasta"):
+        # Count only valid nucleotides in the sequence
+        total_length += sum(1 for nucleotide in record.seq if nucleotide in valid_nucleotides)
+
+    return total_length
+
 def ref_based(df, run_bowtie, input_dir):
     """
     Run a reference-based pipeline with consensus genome creation.
@@ -108,6 +114,8 @@ def ref_based(df, run_bowtie, input_dir):
     df['Ref_len'] = ""
     df['Consensus_len'] = ""
     df['Completeness(%)'] = ""
+    df['Polished_Consensus_len'] = ""
+    df['Polished_Completeness(%)'] = ""
 
     dfs = []
     for tax in df['NCBI_ID'].unique():
@@ -137,7 +145,6 @@ def ref_based(df, run_bowtie, input_dir):
                 continue
 
             # Additional polishing using denovo contigs
-            # Assuming this is part of the pipeline based on your previous code
             contigs_file = run_denovo_assembly(sample, sample_r1, sample_r2, input_dir)
             if not contigs_file:
                 continue
@@ -174,19 +181,24 @@ def ref_based(df, run_bowtie, input_dir):
 
             # Calculate genome statistics and update DataFrame
             try:
-                ref_len = sum(len(record.seq) for record in SeqIO.parse(fasta_file, "fasta"))
-                consensus_len = sum(len(record.seq) for record in SeqIO.parse(consensus_contig_polished_file, "fasta"))
+                ref_len = calculate_genome_length(fasta_file)
+                consensus_len = calculate_genome_length(consensus_file)
+                polished_consensus_len = calculate_genome_length(consensus_contig_polished_file)
                 completeness = (consensus_len / ref_len) * 100 if ref_len > 0 else 0
-                logging.info(f"Sample {sample}: Ref_len={ref_len}, Consensus_len={consensus_len}, Completeness={completeness:.2f}%")
+                polished_completeness = (polished_consensus_len / ref_len) * 100 if ref_len > 0 else 0
 
-                dftax.loc[dftax['SampleID'] == sample, 'Ref_len'] = ref_len
-                dftax.loc[dftax['SampleID'] == sample, 'Consensus_len'] = consensus_len
-                dftax.loc[dftax['SampleID'] == sample, 'Completeness(%)'] = completeness
+                df.loc[df['SampleID'] == sample, 'Ref_len'] = ref_len
+                df.loc[df['SampleID'] == sample, 'Consensus_len'] = consensus_len
+                df.loc[df['SampleID'] == sample, 'Completeness(%)'] = completeness
+                df.loc[df['SampleID'] == sample, 'Polished_Consensus_len'] = polished_consensus_len
+                df.loc[df['SampleID'] == sample, 'Polished_Completeness(%)'] = polished_completeness
             except Exception as e:
-                logging.error(f"Error calculating genome stats for {sample}: {e}")
-                continue
+                logging.error(f"Error calculating genome stats for sample {sample}: {e}")
 
         dfs.append(dftax)
+
+   
+
 
     # Concatenate all DataFrames and save as CSV
     full_df = pd.concat(dfs)
