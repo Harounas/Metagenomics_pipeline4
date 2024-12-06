@@ -137,22 +137,59 @@ def ref_based(df, run_bowtie, input_dir):
             if not consensus_genome:
                 continue
 
-            # Additional polishing using denovo contigs (to be added as per your requirement)
+            # Additional polishing using denovo contigs
             # Assuming this is part of the pipeline based on your previous code
+            contigs_file = run_denovo_assembly(sample, sample_r1, sample_r2, sample_dir)
+            if not contigs_file:
+                continue
 
+            # Polishing step using the denovo assembly contigs
+            vcf_contig_consensus_file = os.path.join(sample_dir, f"{sample}_consensus_variants.vcf")
+            consensus_contig_file = consensus_file
+            consensus_contig_polished_file = os.path.join(sample_dir, f"{sample}_consensus_polished_genome.fa")
+            bam_contig_consensus_file = os.path.join(sample_dir, f"{sample}_consensus_reads.bam")
+
+            # Index the consensus genome
+            bwa_contig = f"bwa index {consensus_contig_file}"
             try:
-                ref_len = calculate_genome_length(fasta_file)
-                consensus_len = calculate_genome_length(consensus_file)
+                subprocess.run(bwa_contig, shell=True, check=True)
+
+                # Align the consensus genome against the denovo contigs
+                bwa_command_consensus = f"bwa mem -a -t 16 {consensus_contig_file} {contigs_file} | samtools sort -o {bam_contig_consensus_file}"
+                subprocess.run(bwa_command_consensus, shell=True, check=True)
+
+                # Index the BAM file
+                samtools_index_consensus_command = f"samtools index {bam_contig_consensus_file}"
+                subprocess.run(samtools_index_consensus_command, shell=True, check=True)
+
+                # Generate VCF file for consensus variants
+                bcftools_command_consensus = f"bcftools mpileup -f {consensus_contig_file} {bam_contig_consensus_file} | bcftools call -c --ploidy 1 -v -o {vcf_contig_consensus_file}"
+                subprocess.run(bcftools_command_consensus, shell=True, check=True)
+
+                # Generate polished consensus genome using iVar
+                ivar_command_polished = f"samtools mpileup -aa -A -d 0 -Q 0 -f {consensus_contig_file} {bam_contig_consensus_file} | ivar consensus -p {consensus_contig_polished_file}"
+                subprocess.run(ivar_command_polished, shell=True, check=True)
+            except subprocess.CalledProcessError as e:
+                logging.error(f"Error during polishing for sample {sample}: {e}")
+                continue
+
+            # Calculate genome statistics and update DataFrame
+            try:
+                ref_len = sum(len(record.seq) for record in SeqIO.parse(fasta_file, "fasta"))
+                consensus_len = sum(len(record.seq) for record in SeqIO.parse(consensus_contig_polished_file, "fasta"))
                 completeness = (consensus_len / ref_len) * 100 if ref_len > 0 else 0
+                logging.info(f"Sample {sample}: Ref_len={ref_len}, Consensus_len={consensus_len}, Completeness={completeness:.2f}%")
 
                 dftax.loc[dftax['SampleID'] == sample, 'Ref_len'] = ref_len
                 dftax.loc[dftax['SampleID'] == sample, 'Consensus_len'] = consensus_len
-                dftax.loc[dftax['SampleID'] == sample, 'Completeness(%)'] = f"{completeness:.2f}"
+                dftax.loc[dftax['SampleID'] == sample, 'Completeness(%)'] = completeness
             except Exception as e:
-                logging.error(f"Error calculating lengths for {sample}: {e}")
+                logging.error(f"Error calculating genome stats for {sample}: {e}")
+                continue
 
         dfs.append(dftax)
 
-    merged_df = pd.concat(dfs, ignore_index=True)
-    merged_df.to_csv(f"{input_dir}/summary_genome_stats.csv", index=False)
-    logging.info(f"Pipeline completed. Results saved to: {input_dir}/summary_genome_stats.csv")
+    # Concatenate all DataFrames and save as CSV
+    full_df = pd.concat(dfs)
+    full_df.to_csv("summary_genome_stats.csv", index=False)
+    logging.info("Pipeline completed. Results saved to 'summary_genome_stats.csv'.")
