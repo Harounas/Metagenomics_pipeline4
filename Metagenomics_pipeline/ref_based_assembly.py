@@ -139,7 +139,7 @@ def ref_based(df, run_bowtie, input_dir):
 
             # Additional polishing using denovo contigs
             # Assuming this is part of the pipeline based on your previous code
-            contigs_file = run_denovo_assembly(sample, sample_r1, sample_r2, sample_dir)
+            contigs_file = run_denovo_assembly(sample, sample_r1, sample_r2, input_dir)
             if not contigs_file:
                 continue
 
@@ -191,5 +191,5 @@ def ref_based(df, run_bowtie, input_dir):
 
     # Concatenate all DataFrames and save as CSV
     full_df = pd.concat(dfs)
-    full_df.to_csv("summary_genome_stats.csv", index=False)
-    logging.info("Pipeline completed. Results saved to 'summary_genome_stats.csv'.")
+    full_df.to_csv(f"{input_dir}/summary_genome_stats.csv", index=False)
+    logging.info("Pipeline completed. Results saved to f'{input_dir}/summary_genome_stats.csv'.")
