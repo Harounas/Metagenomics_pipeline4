@@ -94,14 +94,13 @@ def generate_consensus_genome(fasta_file, bam_file, consensus_file):
     logging.info(f"Consensus genome generated: {consensus_file}")
     return consensus_file
 
-def calculate_genome_length(fasta_file):
-    """
-    Calculate the genome length based on valid ACTG nucleotides in a FASTA file.
-    """
-    command = f"grep -v '^>' {fasta_file} | tr -d '\\n' | tr -cd 'ACTG' | wc -c"
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
-    return int(result.stdout.strip())
 
+
+def calculate_genome_length(fasta_file):
+           # Command to calculate genome length (valid nucleotides only: A, C, T, G)
+               command = f"grep -v '^>' {fasta_file} | tr -d '\\n' | tr -cd 'ACTG' | wc -c"
+               result = subprocess.run(command, shell=True, capture_output=True, text=True)
+               return int(result.stdout.strip())
 def ref_based(df, run_bowtie, input_dir):
     """
     Run a reference-based pipeline with consensus genome creation.
