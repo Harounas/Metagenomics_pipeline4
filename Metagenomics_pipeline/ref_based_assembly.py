@@ -104,18 +104,25 @@ def align_reads_to_reference(fasta_file, sample_r1, sample_r2, output_dir, sampl
 
 def calculate_completeness(fasta_file, consensus_file):
     """
-    Calculate genome completeness based on reference and consensus lengths.
+    Calculate genome completeness based on the lengths of valid ACTG bases in the reference and consensus genomes.
 
     Parameters:
     fasta_file (str): Path to the reference genome.
     consensus_file (str): Path to the consensus genome.
 
     Returns:
-    tuple: Reference length, consensus length, and completeness percentage.
+    tuple: Reference length (ACTG only), consensus length (ACTG only), and completeness percentage.
     """
     try:
-        ref_len = sum(len(record.seq) for record in SeqIO.parse(fasta_file, "fasta"))
-        consensus_len = sum(len(record.seq) for record in SeqIO.parse(consensus_file, "fasta"))
+        # Count valid ACTG bases in the reference genome
+        ref_command = f"grep -v '^>' {fasta_file} | tr -d '\\n' | tr -cd 'ACTG' | wc -c"
+        ref_len = int(subprocess.check_output(ref_command, shell=True).strip())
+        
+        # Count valid ACTG bases in the consensus genome
+        consensus_command = f"grep -v '^>' {consensus_file} | tr -d '\\n' | tr -cd 'ACTG' | wc -c"
+        consensus_len = int(subprocess.check_output(consensus_command, shell=True).strip())
+        
+        # Calculate completeness percentage
         completeness = (consensus_len / ref_len) * 100 if ref_len > 0 else 0
         return ref_len, consensus_len, completeness
     except Exception as e:
