@@ -75,6 +75,25 @@ def align_reads_to_reference(fasta_file, sample_r1, sample_r2, output_dir, sampl
     logging.info(f"Alignment completed for {sample}: {bam_file}")
     return bam_file
 
+def generate_consensus_genome(fasta_file, bam_file, consensus_file):
+    """
+    Generate consensus genome using iVar.
+    """
+    ivar_command = f"samtools mpileup -aa -A -d 0 -Q 0 -f {fasta_file} {bam_file} | ivar consensus -p {consensus_file}"
+    try:
+        logging.info(f"Generating consensus genome using iVar: {ivar_command}")
+        subprocess.run(ivar_command, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error running iVar for consensus genome: {e}")
+        return None
+
+    if not os.path.exists(consensus_file):
+        logging.error(f"Consensus genome not generated for {bam_file}")
+        return None
+
+    logging.info(f"Consensus genome generated: {consensus_file}")
+    return consensus_file
+
 def calculate_genome_length(fasta_file):
     """
     Calculate the genome length based on valid ACTG nucleotides in a FASTA file.
@@ -114,6 +133,13 @@ def ref_based(df, run_bowtie, input_dir):
                 continue
 
             consensus_file = os.path.join(sample_dir, f"{sample}_consensus_genome.fa")
+            consensus_genome = generate_consensus_genome(fasta_file, bam_file, consensus_file)
+            if not consensus_genome:
+                continue
+
+            # Additional polishing using denovo contigs (to be added as per your requirement)
+            # Assuming this is part of the pipeline based on your previous code
+
             try:
                 ref_len = calculate_genome_length(fasta_file)
                 consensus_len = calculate_genome_length(consensus_file)
