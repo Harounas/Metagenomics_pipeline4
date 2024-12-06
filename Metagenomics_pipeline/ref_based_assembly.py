@@ -135,55 +135,36 @@ def ref_based(df, run_bowtie, input_dir):
             sample_dir = os.path.join(tax_dir, f"{scientific_name}_assembled")
             os.makedirs(sample_dir, exist_ok=True)
 
-            bam_file = align_reads_to_reference(fasta_file, sample_r1, sample_r2, sample_dir, sample)
-            if not bam_file:
-                continue
-
-            consensus_file = os.path.join(sample_dir, f"{sample}_consensus_genome.fa")
-            consensus_genome = generate_consensus_genome(fasta_file, bam_file, consensus_file)
-            if not consensus_genome:
-                continue
-
-            # Additional polishing using denovo contigs
+            # Step 1: Align contigs to reference and generate initial consensus genome
             contigs_file = run_denovo_assembly(sample, sample_r1, sample_r2, input_dir)
             if not contigs_file:
                 continue
 
-            # Polishing step using the denovo assembly contigs
-            vcf_contig_consensus_file = os.path.join(sample_dir, f"{sample}_consensus_variants.vcf")
-            consensus_contig_file = consensus_file
-            consensus_contig_polished_file = os.path.join(sample_dir, f"{sample}_consensus_polished_genome.fa")
-            bam_contig_consensus_file = os.path.join(sample_dir, f"{sample}_consensus_reads.bam")
-
-            # Index the consensus genome
-            bwa_contig = f"bwa index {consensus_contig_file}"
-            try:
-                subprocess.run(bwa_contig, shell=True, check=True)
-
-                # Align the consensus genome against the denovo contigs
-                bwa_command_consensus = f"bwa mem -a -t 16 {consensus_contig_file} {contigs_file} | samtools sort -o {bam_contig_consensus_file}"
-                subprocess.run(bwa_command_consensus, shell=True, check=True)
-
-                # Index the BAM file
-                samtools_index_consensus_command = f"samtools index {bam_contig_consensus_file}"
-                subprocess.run(samtools_index_consensus_command, shell=True, check=True)
-
-                # Generate VCF file for consensus variants
-                bcftools_command_consensus = f"bcftools mpileup -f {consensus_contig_file} {bam_contig_consensus_file} | bcftools call -c --ploidy 1 -v -o {vcf_contig_consensus_file}"
-                subprocess.run(bcftools_command_consensus, shell=True, check=True)
-
-                # Generate polished consensus genome using iVar
-                ivar_command_polished = f"samtools mpileup -aa -A -d 0 -Q 0 -f {consensus_contig_file} {bam_contig_consensus_file} | ivar consensus -p {consensus_contig_polished_file}"
-                subprocess.run(ivar_command_polished, shell=True, check=True)
-            except subprocess.CalledProcessError as e:
-                logging.error(f"Error during polishing for sample {sample}: {e}")
+            bam_file = align_reads_to_reference(fasta_file, contigs_file, contigs_file, sample_dir, sample)
+            if not bam_file:
                 continue
 
-            # Calculate genome statistics and update DataFrame
+            initial_consensus_file = os.path.join(sample_dir, f"{sample}_initial_consensus.fa")
+            initial_consensus_genome = generate_consensus_genome(fasta_file, bam_file, initial_consensus_file)
+            if not initial_consensus_genome:
+                continue
+
+            # Step 2: Align the raw FASTQs to this initial consensus
+            bam_file_raw = align_reads_to_reference(initial_consensus_file, sample_r1, sample_r2, sample_dir, sample)
+            if not bam_file_raw:
+                continue
+
+            # Step 3: Polish the initial consensus genome
+            polished_consensus_file = os.path.join(sample_dir, f"{sample}_polished_consensus.fa")
+            polished_consensus_genome = generate_consensus_genome(initial_consensus_file, bam_file_raw, polished_consensus_file)
+            if not polished_consensus_genome:
+                continue
+
+            # Calculate genome statistics
             try:
                 ref_len = calculate_genome_length(fasta_file)
-                consensus_len = calculate_genome_length(consensus_file)
-                polished_consensus_len = calculate_genome_length(consensus_contig_polished_file)
+                consensus_len = calculate_genome_length(initial_consensus_file)
+                polished_consensus_len = calculate_genome_length(polished_consensus_file)
                 completeness = (consensus_len / ref_len) * 100 if ref_len > 0 else 0
                 polished_completeness = (polished_consensus_len / ref_len) * 100 if ref_len > 0 else 0
 
@@ -196,9 +177,6 @@ def ref_based(df, run_bowtie, input_dir):
                 logging.error(f"Error calculating genome stats for sample {sample}: {e}")
 
         dfs.append(dftax)
-
-   
-
 
     # Concatenate all DataFrames and save as CSV
     full_df = pd.concat(dfs)
