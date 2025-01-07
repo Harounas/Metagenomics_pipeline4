@@ -107,7 +107,7 @@ def calculate_genome_length(fasta_file):
 
     return total_length
 
-def ref_based(df, run_bowtie, input_dir):
+def deno_ref_based(df, run_bowtie, input_dir):
     """
     Run a reference-based pipeline with consensus genome creation.
     """
