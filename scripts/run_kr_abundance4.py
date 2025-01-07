@@ -62,7 +62,8 @@ def main():
     parser.add_argument("--pat_to_keep", type=str, nargs='+', help="Bacteria or virus name to be kept")
     parser.add_argument("--max_read_count", type=int, default=5000000000, help="Maximum number of read counts")
     parser.add_argument("--run_ref_base", action="store_true", help="Run the additional processing pipeline for each taxon (BWA, Samtools, BCFtools, iVar)")
-
+    parser.add_argument("--run_deno_ref", action="store_true", help="Run the additional processing pipeline for each taxon (BWA, Samtools, BCFtools, iVar)")
+    
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -116,6 +117,11 @@ def main():
     if args.run_ref_base:
         logging.info(f"Starting reference-based pipeline.")
         ref_based(df, run_bowtie, args.output_dir)
+    if args.run_deno_ref:
+        logging.info(f"Starting ref denovo asseml pipeline.")
+        deno_ref_assembly(df, run_bowtie, args.output_dir)
+
+
 
 
 if __name__ == "__main__":
