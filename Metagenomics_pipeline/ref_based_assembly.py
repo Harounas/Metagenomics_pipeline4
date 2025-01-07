@@ -28,7 +28,9 @@ def ref_based(df, run_bowtie, input_dir):
     for tax in taxids:
         # Filter DataFrame for the current tax ID
         dftax = df[df['NCBI_ID'] == tax]
-
+        dftax['Ref_len'] =""
+        dftax['Consensus_len']=""
+        dftax['Completness(%)']=""
         # Get the first scientific name for the tax ID (assumes consistency)
         scientific_name = dftax['Scientific_name'].iloc[0].replace(' ', '_')  # Replace spaces with underscores
         tax_dir = os.path.join(base_dir, f"{scientific_name}_txid{tax}")
@@ -121,9 +123,13 @@ def ref_based(df, run_bowtie, input_dir):
              print(f"Error calculating genome lengths: {e}")
  
         # Add a new column and conditionally set values
+        #dftax['Ref_len'] = dftax.apply(lambda row: ref_genome_len if row['NCBI_ID'] == tax and row['SampleID'] == sample else row['Ref_len'],axis=1)
+        #dftax['Consensus_len'] = dftax.apply(lambda row: consensus_genome_len if row['NCBI_ID'] == tax and row['SampleID'] == sample else row['Consensus_len'], axis=1)
+        #dftax['Completness(%)'] = dftax.apply(lambda row:f"{consensus_genome_len *100/ ref_genome_len:.2f}" if row['NCBI_ID'] == tax and row['SampleID'] == sample else row['Completness(%)'], axis=1) 
+            # Add a new column and conditionally set values
         dftax['Ref_len'] = dftax.apply(lambda row: ref_genome_len if row['NCBI_ID'] == tax and row['SampleID'] == sample else row['Ref_len'],axis=1)
         dftax['Consensus_len'] = dftax.apply(lambda row: consensus_genome_len if row['NCBI_ID'] == tax and row['SampleID'] == sample else row['Consensus_len'], axis=1)
-        dftax['Completness(%)'] = dftax.apply(lambda row:f"{consensus_genome_len *100/ ref_genome_len:.2f}" if row['NCBI_ID'] == tax and row['SampleID'] == sample else row['Completness(%)'], axis=1) 
+        dftax['Completness(%)'] = dftax.apply(lambda row:f"{consensus_genome_len / ref_genome_len:.2f}" if row['NCBI_ID'] == tax and row['SampleID'] == sample else row['Completness'], axis=1)   
         dfs.append(dftax)
     merged_df = pd.concat(dfs, ignore_index=True)
     merged_df.to_csv("Output-summary.csv", index=False)
