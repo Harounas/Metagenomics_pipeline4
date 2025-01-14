@@ -81,6 +81,7 @@ def main():
         reverse_candidates = [
             os.path.join(args.input_dir, f"{base_name}_R2_001.fastq.gz"),
             os.path.join(args.input_dir, f"{base_name}_R2.fastq.gz"),
+            os.path.join(args.input_dir, f"{base_name}_R2.fastq"),
         ]
 
         reverse = next((f for f in reverse_candidates if os.path.isfile(f)), None)
