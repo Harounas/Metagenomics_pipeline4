@@ -133,3 +133,8 @@ def ref_based(df, run_bowtie, input_dir):
         dfs.append(dftax)
     merged_df = pd.concat(dfs, ignore_index=True)
     merged_df.to_csv("Output-summary.csv", index=False)
+    # Convert Completeness(%) column to numeric and filter rows where completeness is at least 0.80
+    merged_df['Completness(%)'] = pd.to_numeric(merged_df['Completness(%)'], errors='coerce')
+    filtered_df = merged_df[merged_df['Completness(%)'] >= 0.80]
+    # Save filtered data to Output-summary_complete.csv
+    filtered_df.to_csv("Output-summary_complete.csv", index=False)
