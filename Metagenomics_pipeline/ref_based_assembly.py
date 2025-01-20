@@ -78,7 +78,7 @@ def ref_based(df, run_bowtie, input_dir):
     merged_df = pd.concat(dfs, ignore_index=True)
     
     
-    filtered_df = merged_df[pd.to_numeric(merged_df['Completeness(%)'], errors='coerce') >= 80]
+    filtered_df = merged_df[pd.to_numeric(merged_df['Completeness(%)'], errors='coerce') >= 60]
     filtered_df.to_csv("Output-summary_complete.csv", index=False)
     merged_df.drop(columns=['sequence'], inplace=True)
     merged_df.to_csv("Output-summary1.csv", index=False)
