@@ -39,7 +39,7 @@ def run_denovo_assembly(sample, sample_r1, sample_r2, output_dir):
         logging.info(f"De novo assembly already exists for {sample}. Skipping.")
         return contigs_file
 
-    command = f"metaspades.py -1 {sample_r1} -2 {sample_r2} -o {output_dir} -t 32"
+    command = f"spades.py -1 {sample_r1} -2 {sample_r2} -o {output_dir}/{sample}_denovo -t 32"
     try:
         logging.info(f"Running de novo assembly for {sample}: {command}")
         subprocess.run(command, shell=True, check=True)
@@ -119,7 +119,7 @@ def deno_ref_based(df, run_bowtie, input_dir):
 
     dfs = []
     for tax in df['NCBI_ID'].unique():
-        dftax = df[df['NCBI_ID'] == tax]
+        dftax = df[df['NCBI_ID'] == tax].copy()
         scientific_name = dftax['Scientific_name'].iloc[0].replace(' ', '_')
         tax_dir = os.path.join("Fasta_files", f"{scientific_name}_txid{tax}")
         os.makedirs(tax_dir, exist_ok=True)
