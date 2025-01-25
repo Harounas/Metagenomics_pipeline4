@@ -22,6 +22,7 @@ run_kr_abundance --input_dir /home/harouna/ARSNACAdata/bamfiles/mypipeline --out
   * conda install -c bioconda trimmomatic
   * conda install -c bioconda bowtie2
   * conda install -c bioconda kraken2
+  * conda install conda-forge::biopython
     
 
 
