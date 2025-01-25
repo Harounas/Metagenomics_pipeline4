@@ -30,7 +30,7 @@ def download_and_index_reference(tax, scientific_name, tax_dir):
         return None
     return fasta_file
 
-def run_denovo_assembly(sample, sample_r1, sample_r2, output_dir):
+def deno_ref_based(sample, sample_r1, sample_r2, output_dir):
     """
     Run de novo assembly using MetaSPAdes.
     """
