@@ -121,7 +121,7 @@ def main():
         ref_based(df, run_bowtie, args.output_dir)
     if args.run_deno_ref:
         logging.info(f"Starting ref denovo asseml pipeline.")
-        deno_ref_based(df, args.output_dir,run_bowtie)
+        deno_ref_based(df, args.output_dir,args.output_dir,run_bowtie)
 
 
 
