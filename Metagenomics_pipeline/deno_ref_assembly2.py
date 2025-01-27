@@ -39,7 +39,7 @@ def run_de_novo_assembly(sample, sample_r1, sample_r2, output_dir):
         logging.info(f"De novo assembly already exists for {sample}. Skipping.")
         return contigs_file
 
-    command = f"metaspades.py -1 {output_dir}/{sample_r1} -2 {output_dir}/{sample_r2} -o {output_dir}/{sample}_denovo -t 32"
+    command = f"metaspades.py -1 {sample_r1} -2 {sample_r2} -o {output_dir}/{sample}_denovo -t 32"
     try:
         logging.info(f"Running de novo assembly for {sample}: {command}")
         subprocess.run(command, shell=True, check=True)
