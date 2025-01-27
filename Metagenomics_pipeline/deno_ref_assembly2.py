@@ -54,7 +54,7 @@ def run_de_novo_assembly(sample, sample_r1, sample_r2, output_dir):
     logging.info(f"De novo assembly completed for {sample}: {contigs_file}")
     return contigs_file
 
-def deno_ref_based(df, input_dir, output_dir, run_bowtie=True):
+def deno_ref_based(df, input_dir, output_dir, run_bowtie):
     base_dir = "Fasta_files"
     """
     Process samples, run de novo assembly, and calculate completeness.
