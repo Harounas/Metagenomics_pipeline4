@@ -39,7 +39,7 @@ def run_de_novo_assembly(sample, sample_r1, sample_r2, output_dir):
         logging.info(f"De novo assembly already exists for {sample}. Skipping.")
         return contigs_file
 
-    command = f"metaspades.py -1 {sample_r1} -2 {sample_r2} -o {output_dir}/{sample}_denovo -t 32"
+    command = f"metaspades.py -1 {output_dir}/{sample_r1} -2 {output_dir}/{sample_r2} -o {output_dir}/{sample}_denovo -t 32"
     try:
         logging.info(f"Running de novo assembly for {sample}: {command}")
         subprocess.run(command, shell=True, check=True)
@@ -78,6 +78,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie=True):
 
         # Run de novo assembly for each sample
         for sample in dftax['SampleID']:
+
             sample_r1 = os.path.join(input_dir, f"{sample}_unmapped_1.fastq.gz" if run_bowtie else f"{sample}_trimmed_R1.fastq.gz")
             sample_r2 = os.path.join(input_dir, f"{sample}_unmapped_2.fastq.gz" if run_bowtie else f"{sample}_trimmed_R2.fastq.gz")
             
@@ -86,7 +87,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie=True):
                 logging.error(f"Skipping sample {sample} due to assembly failure.")
                 continue
 
-            rag_file = os.path.join(f"{output_dir}/{sample}_rag", "ragtag.scaffold.fast")
+            rag_file = os.path.join(f"{output_dir}/{sample}_rag", "ragtag.scaffold.fasta")
             # Perform further processing on the assembly
             #rag_file = os.path.join(tax_dir, "ragtag.scaffold.fasta")
             if os.path.exists(rag_file):
