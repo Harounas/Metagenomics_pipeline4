@@ -54,6 +54,13 @@ def run_de_novo_assembly(sample, sample_r1, sample_r2, output_dir):
     logging.info(f"De novo assembly completed for {sample}: {contigs_file}")
     return contigs_file
 
+def extract_first_contig_id(fasta_file):
+    with open(fasta_file, 'r') as file:
+        for line in file:
+            if line.startswith('>'):
+                return line[1:].strip()  # Remove the '>' and any leading/trailing whitespace
+
+
 def deno_ref_based(df, input_dir, output_dir, run_bowtie):
     base_dir = "Fasta_files"
     """
@@ -100,9 +107,11 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
             #seqid_file = os.path.join(f"{output_dir}/{sample}_rag", "seqid.txt")
             seqid_file  = os.path.dirname(rag_file)
             logging.info(f"RagTag output path {seqid_file }.")
+        
+            contig_id = extract_first_contig_id(rag_file)
             first_contig = os.path.join(f"{seqid_file}", "first_contig.fasta")
             logging.info(f"RagTag output path {first_contig }.")
-            subprocess.run(f"seqtk subseq {rag_file} {seqid_file} > {first_contig}", shell=True, check=True)
+            subprocess.run(f"seqtk subseq {rag_file} {first_contig} > {first_contig}", shell=True, check=True)
             subprocess.run(f"bwa index {first_contig}", shell=True, check=True)
 
             sample_dir = os.path.join(base_dir, f"{scientific_name}_assembled1")
