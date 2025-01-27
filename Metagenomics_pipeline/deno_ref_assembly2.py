@@ -99,7 +99,9 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
             # Extract first contig
             #seqid_file = os.path.join(f"{output_dir}/{sample}_rag", "seqid.txt")
             seqid_file  = os.path.dirname(rag_file)
+            logging.info(f"RagTag output path {seqid_file }.")
             first_contig = os.path.join(f"{seqid_file}", "first_contig.fasta")
+            logging.info(f"RagTag output path {first_contig }.")
             subprocess.run(f"seqtk subseq {rag_file} {seqid_file} > {first_contig}", shell=True, check=True)
             subprocess.run(f"bwa index {first_contig}", shell=True, check=True)
 
