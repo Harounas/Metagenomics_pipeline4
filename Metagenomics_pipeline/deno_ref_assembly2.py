@@ -65,6 +65,10 @@ def split_fasta(input_file, output_dir):
 
 
 
+import os
+import subprocess
+from pathlib import Path
+
 def get_best_reference(sample_r1, sample_r2, reference_list):
     """
     Align paired-end FASTQ files to a list of reference FASTA files using BWA
@@ -83,8 +87,14 @@ def get_best_reference(sample_r1, sample_r2, reference_list):
 
     for fasta in reference_list:
         index_base = Path(fasta).stem  # Extract the base name for the index
-        output_sam = f"{index_b
-                        lledProcessError as e:
+        output_sam = f"{index_base}_aligned.sam"  # SAM file for the output
+
+        # Check if the BWA index exists; if not, create it
+        if not Path(f"{fasta}.bwt").exists():
+            print(f"Index for {fasta} not found. Creating index...")
+            try:
+                subprocess.run(["bwa", "index", fasta], check=True)
+            except subprocess.CalledProcessError as e:
                 print(f"Error in BWA index creation for {fasta}: {e}")
                 continue
 
@@ -125,8 +135,6 @@ def get_best_reference(sample_r1, sample_r2, reference_list):
     else:
         print("No alignments were successful.")
         return None
-
-print(f"FASTA files have been split and saved. Files: {fasta_files}")
 
 def download_and_index_reference(tax, scientific_name, tax_dir):
     """
