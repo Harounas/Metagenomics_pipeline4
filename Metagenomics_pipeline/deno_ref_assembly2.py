@@ -74,6 +74,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
     taxids = df['NCBI_ID'].unique()
     df['Ref_len'] = ""
     df['Consensus_len'] = ""
+    df['Contig_len'] = ""
     df['Completeness(%)'] = ""
     df['sequence'] = ""
     dfs = []
@@ -139,7 +140,8 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
                 return int(result.stdout.strip()) if result.stdout.strip().isdigit() else 0
             
             try:
-                ref_len = calculate_length(first_contig)
+                contig_len = calculate_length(first_contig)
+                ref_len = calculate_length(fasta_file)
                 consensus_len = calculate_length(consensus_file)
                 completeness = round((consensus_len / ref_len) * 100, 2) if ref_len > 0 else 0
                 sequence = SeqIO.read(consensus_file, "fasta").seq if os.path.exists(consensus_file) else ""
@@ -148,7 +150,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
                 print(type(ref_len), type(consensus_len), type(completeness), type(sequence))
 
                 #logging.info(f"sequence {sequence}.")
-                dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Consensus_len', 'Completeness(%)', 'sequence']] = [ref_len, consensus_len, completeness, sequence]
+                dftax.loc[dftax['SampleID'] == sample, ['Ref_len','Contig_len', 'Consensus_len', 'Completeness(%)', 'sequence']] = [ref_len, contig_len,consensus_len, completeness, str(sequence)]
             except Exception as e:
                 logging.error(f"Error processing sample {sample}: {e}")
         
