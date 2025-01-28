@@ -208,7 +208,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
         os.makedirs(tax_dir, exist_ok=True)
 
         fasta_file = download_and_index_reference(tax, scientific_name, tax_dir)
-        output_file = f"Output_{sample}_{scientific_name}_seqid.txt"
+        
         extract_first_contig_id(rag_file, output_file)
         if not fasta_file:
             continue
@@ -227,7 +227,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
             rag_file = os.path.join(f"{output_dir}/{sample}_{scientific_name}_rag", "ragtag.scaffold.fasta")
             # Example usage
             input_files = fasta_file
-            #output_dir = f"{output_dir}/{sample}_{scientific_name}"
+            output_dir = f"{output_dir}/{sample}_{scientific_name}"
             fasta_files = split_fasta(input_file, output_dir)
             fasta_file=get_best_reference(sample_r1, sample_r2, reference_list)
             # Perform further processing on the assembly
