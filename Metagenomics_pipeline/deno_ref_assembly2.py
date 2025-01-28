@@ -209,7 +209,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
 
         fasta_file = download_and_index_reference(tax, scientific_name, tax_dir)
         
-        extract_first_contig_id(rag_file, output_file)
+        
         if not fasta_file:
             continue
         
