@@ -228,7 +228,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
             # Example usage
             input_files = fasta_file
             output_dir = f"{output_dir}/{sample}_{scientific_name}"
-            fasta_files = split_fasta(input_files, output_dir)
+            reference_list = split_fasta(input_files, output_dir)
             fasta_file=get_best_reference(sample_r1, sample_r2, reference_list)
             # Perform further processing on the assembly
             #rag_file = os.path.join(tax_dir, "ragtag.scaffold.fasta")
