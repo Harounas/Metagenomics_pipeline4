@@ -99,13 +99,13 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
                 logging.error(f"Skipping sample {sample} due to assembly failure.")
                 continue
 
-            rag_file = os.path.join(f"{output_dir}/{sample}_rag", "ragtag.scaffold.fasta")
+            rag_file = os.path.join(f"{output_dir}/{sample}_{scientific_name}_rag", "ragtag.scaffold.fasta")
             # Perform further processing on the assembly
             #rag_file = os.path.join(tax_dir, "ragtag.scaffold.fasta")
             if os.path.exists(rag_file):
                 logging.info(f"RagTag output already exists for {scientific_name}. Skipping.")
             else:
-                command = f"ragtag.py scaffold {fasta_file} {contigs_file} -o {output_dir}/{sample}_rag"
+                command = f"ragtag.py scaffold {fasta_file} {contigs_file} -o {output_dir}/{sample}_{scientific_name}_rag"
                 subprocess.run(command, shell=True, check=True)
             
             # Extract first contig
@@ -117,7 +117,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
             extract_first_contig_id(rag_file, output_file)
             first_contig = os.path.join(f"{seqid_file}", "first_contig.fasta")
             logging.info(f"RagTag output path {first_contig }.")
-            subprocess.run(f"seqtk subseq {rag_file} {output_file} > {first_contig}", shell=True, check=True)
+            subprocess.run(f"seqtk subseq {rag_file} {output_file}_{sample}_{scientific_name} > {first_contig}", shell=True, check=True)
             subprocess.run(f"bwa index {first_contig}", shell=True, check=True)
 
             sample_dir = os.path.join(base_dir, f"{scientific_name}_assembled1")
