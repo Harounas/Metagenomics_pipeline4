@@ -113,11 +113,11 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
             seqid_file  = os.path.dirname(rag_file)
             logging.info(f"RagTag output path {seqid_file }.")
     
-            output_file = 'seqid.txt'
+            output_file = f"Output_{sample}_{scientific_name}_seqid.txt"
             extract_first_contig_id(rag_file, output_file)
             first_contig = os.path.join(f"{seqid_file}", "first_contig.fasta")
             logging.info(f"RagTag output path {first_contig }.")
-            subprocess.run(f"seqtk subseq {rag_file} {output_file}_{sample}_{scientific_name} > {first_contig}", shell=True, check=True)
+            subprocess.run(f"seqtk subseq {rag_file} {output_file}> {first_contig}", shell=True, check=True)
             subprocess.run(f"bwa index {first_contig}", shell=True, check=True)
 
             sample_dir = os.path.join(base_dir, f"{scientific_name}_assembled1")
