@@ -145,6 +145,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
                 sequence = SeqIO.read(consensus_file, "fasta").seq if os.path.exists(consensus_file) else ""
                 logging.info(f"Consensus length {consensus_len}.")
                 logging.info(f"Reference length {ref_len}.")
+                logging.info(f"sequence {sequence}.")
                 dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Consensus_len', 'Completeness(%)', 'sequence']] = [ref_len, consensus_len, completeness, sequence]
             except Exception as e:
                 logging.error(f"Error processing sample {sample}: {e}")
