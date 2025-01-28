@@ -1,4 +1,4 @@
- import os
+import os
 import subprocess
 from Bio import SeqIO
 import pandas as pd
