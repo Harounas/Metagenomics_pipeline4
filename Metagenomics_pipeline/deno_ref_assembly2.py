@@ -236,7 +236,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
             acc = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
 
             # To get the output as a list of sequence headers:
-            acc_ids = acc.stdout.strip().split("\n")
+            acc_ids = acc.stdout.strip().split("\n")[0]
             # Perform further processing on the assembly
             #rag_file = os.path.join(tax_dir, "ragtag.scaffold.fasta")
             if os.path.exists(rag_file):
@@ -286,7 +286,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
                 print(type(ref_len), type(consensus_len), type(completeness), type(sequence))
 
                 #logging.info(f"sequence {sequence}.")
-                dftax.loc[dftax['SampleID'] == sample, ['Ref_len','Contig_len', 'Consensus_len', 'Completeness(%)', 'Accession_number','sequence']] = [ref_len, contig_len,consensus_len, completeness, str(acc_ids),str(sequence)]
+                dftax.loc[dftax['SampleID'] == sample, ['Ref_len','Contig_len', 'Consensus_len', 'Completeness(%)', 'Accession_number','sequence']] = [ref_len, contig_len,consensus_len, completeness, acc_ids,str(sequence)]
             except Exception as e:
                 logging.error(f"Error processing sample {sample}: {e}")
         
