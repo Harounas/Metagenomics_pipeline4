@@ -198,8 +198,9 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
     df['Consensus_len'] = ""
     df['Contig_len'] = ""
     df['Completeness(%)'] = ""
-    df['sequence'] = ""
     df["Accession_number"]=""
+    df['sequence'] = ""
+    
     dfs = []
 
     for tax in taxids:
