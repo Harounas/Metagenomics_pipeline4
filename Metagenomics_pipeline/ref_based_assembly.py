@@ -145,16 +145,7 @@ def ref_based(df, run_bowtie, input_dir):
         tax_dir = os.path.join(base_dir, f"{scientific_name}_txid{tax}")
         os.makedirs(tax_dir, exist_ok=True)
         fasta_file = os.path.join(tax_dir, f"{scientific_name}.fasta")
-          # Example usage
-        input_files = fasta_file
-            #output_dir = f"{output_dir}/{sample}_{scientific_name}"
-        reference_list = split_fasta(input_files, f"{sample}_{scientific_name}")
-        fasta_file=get_best_reference(sample_r1, sample_r2, reference_list)
-        cmd = f"grep '^>' {fasta_file} | cut -d ' ' -f1 | sed 's/^>//'"
-        acc = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
-
-            # To get the output as a list of sequence headers:
-        acc_ids = acc.stdout.strip().split("\n")[0]
+        
         command = f'esearch -db nucleotide -query "txid{tax}[Organism]" | efilter -source refseq | efetch -format fasta > {fasta_file}'
         subprocess.run(command, shell=True, check=True)
         
@@ -171,7 +162,16 @@ def ref_based(df, run_bowtie, input_dir):
             
             sample_dir = os.path.join(base_dir, f"{scientific_name}_assembled1")
             os.makedirs(sample_dir, exist_ok=True)
-            
+                 # Example usage
+            input_files = fasta_file
+            #output_dir = f"{output_dir}/{sample}_{scientific_name}"
+            reference_list = split_fasta(input_files, sample_dir)
+            fasta_file=get_best_reference(sample_r1, sample_r2, reference_list)
+            cmd = f"grep '^>' {fasta_file} | cut -d ' ' -f1 | sed 's/^>//'"
+            acc = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
+
+            # To get the output as a list of sequence headers:
+            acc_ids = acc.stdout.strip().split("\n")[0]
             bam_file = os.path.join(sample_dir, f"{sample}_{scientific_name}_mapped_reads.bam")
             vcf_file = os.path.join(sample_dir, f"{sample}_{scientific_name}_variants.vcf")
             consensus_file = os.path.join(sample_dir, f"{sample}_{scientific_name}_consensus_genome.fa")
