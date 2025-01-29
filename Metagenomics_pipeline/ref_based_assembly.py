@@ -148,7 +148,7 @@ def ref_based(df, run_bowtie, input_dir):
           # Example usage
         input_files = fasta_file
             #output_dir = f"{output_dir}/{sample}_{scientific_name}"
-        reference_list = split_fasta(input_files, f"{output_dir}/{sample}_{scientific_name}")
+        reference_list = split_fasta(input_files, f"{sample}_{scientific_name}")
         fasta_file=get_best_reference(sample_r1, sample_r2, reference_list)
         cmd = f"grep '^>' {fasta_file} | cut -d ' ' -f1 | sed 's/^>//'"
         acc = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
