@@ -285,7 +285,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
                 print(type(ref_len), type(consensus_len), type(completeness), type(sequence))
 
                 #logging.info(f"sequence {sequence}.")
-                dftax.loc[dftax['SampleID'] == sample, ['Ref_len','Contig_len', 'Consensus_len', 'Completeness(%)', 'Accession_number','sequence']] = [ref_len, contig_len,consensus_len, completeness, acc_ids,str(sequence)]
+                dftax.loc[dftax['SampleID'] == sample, ['Ref_len','Contig_len', 'Consensus_len', 'Completeness(%)', 'Accession_number','sequence']] = [ref_len, contig_len,consensus_len, completeness, str(acc_ids),str(sequence)]
             except Exception as e:
                 logging.error(f"Error processing sample {sample}: {e}")
         
