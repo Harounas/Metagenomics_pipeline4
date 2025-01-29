@@ -1,6 +1,120 @@
 import os
 import subprocess
 import pandas as pd
+from pathlib import Path
+
+
+
+def split_fasta(input_file, output_dir):
+    """
+    Splits a multi-sequence FASTA file into individual FASTA files, 
+    each corresponding to a separate sequence, and returns a list of 
+    those file paths.
+
+    Args:
+    - input_file (str): Path to the input FASTA file.
+    - output_dir (str): Directory to store the individual FASTA files.
+
+    Returns:
+    - List of paths to the generated FASTA files.
+    """
+    Path(output_dir).mkdir(exist_ok=True)  # Ensure the output directory exists
+    fasta_files = []  # List to store the paths of the generated FASTA files
+
+    with open(input_file, "r") as fasta:
+        sequence = []
+        accession = None
+        for line in fasta:
+            if line.startswith(">"):  # New sequence header
+                if accession:  # Save the previous sequence
+                    file_path = f"{output_dir}/{accession}.fasta"
+                    with open(file_path, "w") as out_fasta:
+                        out_fasta.write("".join(sequence))
+                    fasta_files.append(file_path)  # Add to list of FASTA file paths
+                # Extract accession number from header
+                accession = line.split()[0][1:]  # Remove '>' and take first part
+                sequence = [line]  # Start a new sequence
+            else:
+                sequence.append(line)
+        # Save the last sequence
+        if accession:
+            file_path = f"{output_dir}/{accession}.fasta"
+            with open(file_path, "w") as out_fasta:
+                out_fasta.write("".join(sequence))
+            fasta_files.append(file_path)  # Add to list of FASTA file paths
+
+    return fasta_files
+
+
+
+
+
+def get_best_reference(sample_r1, sample_r2, reference_list):
+    """
+    Align paired-end FASTQ files to a list of reference FASTA files using BWA
+    and return the best reference based on alignment scores.
+
+    Parameters:
+        sample_r1 (str): Path to the first paired-end FASTQ file.
+        sample_r2 (str): Path to the second paired-end FASTQ file.
+        reference_list (list): List of paths to reference FASTA files.
+
+    Returns:
+        str: The best reference file with the highest alignment score.
+    """
+    # Dictionary to store alignment scores
+    alignment_scores = {}
+
+    for fasta in reference_list:
+        index_base = Path(fasta).stem  # Extract the base name for the index
+        output_sam = f"{index_base}_aligned.sam"  # SAM file for the output
+
+        # Check if the BWA index exists; if not, create it
+        if not Path(f"{fasta}.bwt").exists():
+            print(f"Index for {fasta} not found. Creating index...")
+            try:
+                subprocess.run(["bwa", "index", fasta], check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error in BWA index creation for {fasta}: {e}")
+                continue
+
+        # Run BWA for alignment
+        bwa_command = [
+            "bwa", "mem", fasta, sample_r1, sample_r2
+        ]
+        try:
+            with open(output_sam, "w") as sam_file:
+                subprocess.run(bwa_command, check=True, stdout=sam_file)
+        except subprocess.CalledProcessError as e:
+            print(f"Error in BWA alignment for {fasta}: {e}")
+            continue
+
+        # Parse alignment score from the SAM file
+        score = 0
+        try:
+            with open(output_sam, "r") as sam_file:
+                for line in sam_file:
+                    if not line.startswith("@"):  # Skip header lines
+                        fields = line.strip().split("\t")
+                        try:
+                            # Use the AS:i:<score> tag for alignment score (if available)
+                            score += int([tag for tag in fields if tag.startswith("AS:i:")][0].split(":")[2])
+                        except IndexError:
+                            continue
+        except FileNotFoundError:
+            print(f"Failed to open SAM file: {output_sam}")
+            continue
+
+        alignment_scores[fasta] = score
+
+    # Pick the reference with the highest alignment score
+    if alignment_scores:
+        best_reference = max(alignment_scores, key=alignment_scores.get)
+        print(f"The best reference is {best_reference} with a score of {alignment_scores[best_reference]}")
+        return best_reference
+    else:
+        print("No alignments were successful.")
+        return None
 
 def extract_sequence(fasta_file):
     """Extracts the sequence from a FASTA file as a single string."""
