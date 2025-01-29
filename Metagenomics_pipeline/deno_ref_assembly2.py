@@ -4,8 +4,8 @@ from Bio import SeqIO
 import pandas as pd
 import logging
 import os
-import subprocess
 from pathlib import Path
+
 
 
 # Setup logging
@@ -65,9 +65,6 @@ def split_fasta(input_file, output_dir):
 
 
 
-import os
-import subprocess
-from pathlib import Path
 
 def get_best_reference(sample_r1, sample_r2, reference_list):
     """
