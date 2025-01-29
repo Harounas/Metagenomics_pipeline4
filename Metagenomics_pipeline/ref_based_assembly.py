@@ -64,7 +64,7 @@ def get_best_reference(sample_r1, sample_r2, reference_list):
     """
     # Dictionary to store alignment scores
     alignment_scores = {}
-
+   
     for fasta in reference_list:
         index_base = Path(fasta).stem  # Extract the base name for the index
         output_sam = f"{index_base}_aligned.sam"  # SAM file for the output
@@ -135,6 +135,7 @@ def ref_based(df, run_bowtie, input_dir):
     df['Ref_len'] = ""
     df['Consensus_len'] = ""
     df['Completeness(%)'] = ""
+    df["Accession_number"]=""
     df['sequence'] = ""
     dfs = []
 
@@ -144,7 +145,16 @@ def ref_based(df, run_bowtie, input_dir):
         tax_dir = os.path.join(base_dir, f"{scientific_name}_txid{tax}")
         os.makedirs(tax_dir, exist_ok=True)
         fasta_file = os.path.join(tax_dir, f"{scientific_name}.fasta")
-        
+          # Example usage
+        input_files = fasta_file
+            #output_dir = f"{output_dir}/{sample}_{scientific_name}"
+        reference_list = split_fasta(input_files, f"{output_dir}/{sample}_{scientific_name}")
+        fasta_file=get_best_reference(sample_r1, sample_r2, reference_list)
+        cmd = f"grep '^>' {fasta_file} | cut -d ' ' -f1 | sed 's/^>//'"
+        acc = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
+
+            # To get the output as a list of sequence headers:
+        acc_ids = acc.stdout.strip().split("\n")[0]
         command = f'esearch -db nucleotide -query "txid{tax}[Organism]" | efilter -source refseq | efetch -format fasta > {fasta_file}'
         subprocess.run(command, shell=True, check=True)
         
@@ -183,7 +193,7 @@ def ref_based(df, run_bowtie, input_dir):
                 completeness = round((consensus_len / ref_len) * 100, 2) if ref_len > 0 else 0
                 sequence = extract_sequence(consensus_file)
                 
-                dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Consensus_len', 'Completeness(%)', 'sequence']] = [ref_len, consensus_len, completeness, sequence]
+                dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Consensus_len', 'Completeness(%)', 'Accession', 'sequence']] = [ref_len, consensus_len, completeness, acc, sequence]
             except Exception as e:
                 print(f"Error processing sample {sample}: {e}")
         
