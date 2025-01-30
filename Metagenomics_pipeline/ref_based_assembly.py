@@ -142,7 +142,7 @@ def ref_based(df, run_bowtie, input_dir):
     for tax in taxids:
         dftax = df[df['NCBI_ID'] == tax].copy()
         #scientific_name = dftax['Scientific_name'].iloc[0].replace(' ', '_')
-       scientific_name=dftax['Scientific_name'].iloc[0].replace(' ', '_').replace('/', '_')
+        scientific_name=dftax['Scientific_name'].iloc[0].replace(' ', '_').replace('/', '_')
         
         tax_dir = os.path.join(base_dir, f"{scientific_name}_txid{tax}")
         os.makedirs(tax_dir, exist_ok=True)
