@@ -148,6 +148,39 @@ def download_and_index_reference(tax, scientific_name, tax_dir):
         logging.error(f"Error preparing reference for {tax}: {e}")
         return None
     return fasta_file
+def run_de_novo_assembly(sample, sample_r1, sample_r2, output_dir):
+    """
+    Run de novo assembly using MetaSPAdes.
+    """
+    contigs_file = os.path.join(f"{output_dir}/{sample}_denovo", "contigs.fasta")
+    if os.path.exists(contigs_file):
+        logging.info(f"De novo assembly already exists for {sample}. Skipping.")
+        return contigs_file
+
+    command = f"metaspades.py -1 {sample_r1} -2 {sample_r2} -o {output_dir}/{sample}_denovo -t 32"
+    try:
+        logging.info(f"Running de novo assembly for {sample}: {command}")
+        subprocess.run(command, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error in de novo assembly for {sample}: {e}")
+        return None
+
+    if not os.path.exists(contigs_file):
+        logging.error(f"De novo assembly failed: contigs not generated for {sample}")
+        return None
+
+    logging.info(f"De novo assembly completed for {sample}: {contigs_file}")
+    return contigs_file
+
+def extract_first_contig_id(fasta_file, output_file):
+    with open(fasta_file, 'r') as file:
+        for line in file:
+            if line.startswith('>'):
+                contig_id = line[1:].strip()  # Remove the '>' and any leading/trailing whitespace
+                with open(output_file, 'w') as out_file:
+                    out_file.write(contig_id + '\n')  # Write contig ID to the output file
+                break  # Exit after writing the first contig ID
+
 
 def deno_ref_based(df, input_dir, output_dir, run_bowtie):
     base_dir = "Fasta_files"
