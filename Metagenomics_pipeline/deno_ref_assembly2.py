@@ -257,7 +257,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
                 subprocess.run(bwa_command, shell=True, check=True)
                 subprocess.run(f"samtools index {bam_file}", shell=True, check=True)
                 subprocess.run(f"bcftools mpileup -f {first_contig} {bam_file} | bcftools call -c --ploidy 1 -v -o {vcf_file}", shell=True, check=True)
-                subprocess.run(f"samtools mpileup -aa -A -d -d 1000000 -Q 20 -f {first_contig} {bam_file} | ivar consensus -p {consensus_file}", shell=True, check=True)
+                subprocess.run(f"samtools mpileup -aa -A -d 1000000 -Q 20 -f {first_contig} {bam_file} | ivar consensus -p {consensus_file}", shell=True, check=True)
 
                 # Compute sequence lengths and completeness
                 def calculate_length(fasta_file):
