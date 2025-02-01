@@ -237,7 +237,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
                 rag_file = os.path.join(rag_dir, "ragtag.scaffold.fasta")
                 if not os.path.exists(rag_file):
                     os.makedirs(rag_dir, exist_ok=True)
-                    subprocess.run(f"ragtag.py correct {fasta_file} {contigs_file} -o {rag_dir}", shell=True, check=True)
+                    subprocess.run(f"ragtag.py scaffold {fasta_file} {contigs_file} -o {rag_dir}", shell=True, check=True)
 
                 # Extract first contig
                 first_contig = os.path.join(rag_dir, "first_contig.fasta")
