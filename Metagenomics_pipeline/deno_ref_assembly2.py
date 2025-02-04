@@ -263,7 +263,7 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
                 def calculate_length(fasta_file):
                     if not os.path.exists(fasta_file):
                         return 0
-                    cmd = f"grep -v '^>' {fasta_file} | tr -d '\n' | wc -c"
+                    cmd = f"grep -v '^>' {fasta_file} |tr -d '\n' | tr -cd 'ACTG' | wc -c"
                     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
                     return int(result.stdout.strip()) if result.stdout.strip().isdigit() else 0
 
