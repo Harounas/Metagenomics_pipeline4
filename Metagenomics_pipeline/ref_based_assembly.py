@@ -182,7 +182,7 @@ def ref_based(df, run_bowtie, input_dir):
             subprocess.run(bwa_command, shell=True, check=True)
             subprocess.run(f"samtools index {bam_file}", shell=True, check=True)
             subprocess.run(f"bcftools mpileup -f {fasta_file} {bam_file} | bcftools call -c --ploidy 1 -v -o {vcf_file}", shell=True, check=True)
-            subprocess.run(f"samtools mpileup -aa -A -d 0 -Q 0 -f {fasta_file} {bam_file} | ivar consensus -p {consensus_file}", shell=True, check=True)
+            subprocess.run(f"samtools mpileup -aa -A -d 0 -Q 0 -f {fasta_file} {bam_file} | ivar consensus -p {consensus_file} -t 0.5", shell=True, check=True)
             
             def calculate_length(fasta_file):
                 command = f"grep -v '^>' {fasta_file} | tr -d '\n' | tr -cd 'ACTG' | wc -c"
