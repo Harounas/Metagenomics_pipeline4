@@ -181,7 +181,28 @@ def extract_first_contig_id(fasta_file, output_file):
                     out_file.write(contig_id + '\n')  # Write contig ID to the output file
                 break  # Exit after writing the first contig ID
 
-
+def calculate_average_read_depth(bam_file):
+    """
+    Calculate the average read depth from a BAM file using samtools depth.
+    """
+    try:
+        # Run samtools depth command
+        result = subprocess.run(
+            ["samtools", "depth", bam_file],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        # Process the output to calculate average depth
+        depths = [int(line.split()[2]) for line in result.stdout.splitlines()]
+        if depths:
+            average_depth = sum(depths) / len(depths)
+        else:
+            average_depth = 0
+        return average_depth
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error calculating read depth for {bam_file}: {e}")
+        return None
 def deno_ref_based(df, input_dir, output_dir, run_bowtie):
     base_dir = "Fasta_files"
 
@@ -190,8 +211,10 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
     df['Consensus_len'] = ""
     df['Contig_len'] = ""
     df['Completeness(%)'] = ""
+    df['Depth'] = ""
     df['Accession_number'] = ""
     df['sequence'] = ""
+    
 
     dfs = []
     taxids = df['NCBI_ID'].unique()
@@ -272,12 +295,13 @@ def deno_ref_based(df, input_dir, output_dir, run_bowtie):
                 consensus_len = calculate_length(consensus_file)
                 completeness = round((consensus_len / ref_len) * 100, 2) if ref_len > 0 else 0
                 sequence = str(SeqIO.read(consensus_file, "fasta").seq) if os.path.exists(consensus_file) else ""
+                depth=calculate_average_read_depth(bam_file)
 
                 logging.info(f"{sample}: Reference={ref_len}, Contig={contig_len}, Consensus={consensus_len}, Completeness={completeness}%")
 
                 # Update DataFrame
-                dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Contig_len', 'Consensus_len', 'Completeness(%)', 'Accession_number', 'sequence']] = \
-                    [ref_len, contig_len, consensus_len, completeness, acc_id, sequence]
+                dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Contig_len', 'Consensus_len', 'Completeness(%)','Depth', 'Accession_number', 'sequence']] = \
+                    [ref_len, contig_len, consensus_len, completeness,depth, acc_id, sequence]
 
             except Exception as e:
                 logging.error(f"Error processing sample {sample}: {e}")
