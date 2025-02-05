@@ -48,7 +48,28 @@ def split_fasta(input_file, output_dir):
 
 
 
-
+def calculate_average_read_depth(bam_file):
+    """
+    Calculate the average read depth from a BAM file using samtools depth.
+    """
+    try:
+        # Run samtools depth command
+        result = subprocess.run(
+            ["samtools", "depth", bam_file],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        # Process the output to calculate average depth
+        depths = [int(line.split()[2]) for line in result.stdout.splitlines()]
+        if depths:
+            average_depth = sum(depths) / len(depths)
+        else:
+            average_depth = 0
+        return average_depth
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error calculating read depth for {bam_file}: {e}")
+        return None
 def get_best_reference(sample_r1, sample_r2, reference_list):
     """
     Align paired-end FASTQ files to a list of reference FASTA files using BWA
@@ -135,6 +156,7 @@ def ref_based(df, run_bowtie, input_dir):
     df['Ref_len'] = ""
     df['Consensus_len'] = ""
     df['Completeness(%)'] = ""
+    df['Depth']=""
     df["Accession_number"]=""
     df['sequence'] = ""
     dfs = []
@@ -194,8 +216,9 @@ def ref_based(df, run_bowtie, input_dir):
                 consensus_len = calculate_length(consensus_file)
                 completeness = round((consensus_len / ref_len) * 100, 2) if ref_len > 0 else 0
                 sequence = extract_sequence(consensus_file)
+                depth=calculate_average_read_depth(bam_file)
                 
-                dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Consensus_len', 'Completeness(%)', 'Accession', 'sequence']] = [ref_len, consensus_len, completeness, acc, sequence]
+                dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Consensus_len', 'Completeness(%)','Depth', 'Accession', 'sequence']] = [ref_len, consensus_len, completeness,depth, acc, sequence]
             except Exception as e:
                 print(f"Error processing sample {sample}: {e}")
         
