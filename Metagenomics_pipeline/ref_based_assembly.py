@@ -192,7 +192,8 @@ def ref_based(df, run_bowtie, input_dir):
             reference_list = split_fasta(input_files, sample_dir)
             fasta_file=get_best_reference(sample_r1, sample_r2, reference_list)
             cmd = f"grep '^>' {fasta_file} | cut -d ' ' -f1 | sed 's/^>//'"
-            acc = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
+            ac = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
+            acc=ac.stdout.strip()
 
             # To get the output as a list of sequence headers:
             acc_ids = acc.stdout.strip().split("\n")[0]
