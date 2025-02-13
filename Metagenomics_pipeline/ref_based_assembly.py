@@ -122,7 +122,7 @@ def ref_based(df, run_bowtie, input_dir):
     
     for tax in df['NCBI_ID'].unique():
         dftax = df[df['NCBI_ID'] == tax].copy()
-        scientific_name = dftax['Scientific_name'].iloc[0].replace(' ', '_').replace('/', '_')
+        scientific_name = dftax['Scientific_name'].iloc[0].replace(' ', '_').replace('/', '_').replace(')', '').replace('(', '')
         fasta_path = os.path.join(REFERENCE_DIR, f"{scientific_name}_txid{tax}.fasta")
         
         fasta_file = fetch_reference_fasta(tax, fasta_path)
