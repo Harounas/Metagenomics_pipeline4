@@ -2,229 +2,168 @@ import os
 import subprocess
 import pandas as pd
 from pathlib import Path
+import logging
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
+REFERENCE_DIR = "Reference_FASTA"
+
+def ensure_directory_exists(directory):
+    """Creates a directory if it does not exist."""
+    Path(directory).mkdir(parents=True, exist_ok=True)
 
 def split_fasta(input_file, output_dir):
-    """
-    Splits a multi-sequence FASTA file into individual FASTA files, 
-    each corresponding to a separate sequence, and returns a list of 
-    those file paths.
-
-    Args:
-    - input_file (str): Path to the input FASTA file.
-    - output_dir (str): Directory to store the individual FASTA files.
-
-    Returns:
-    - List of paths to the generated FASTA files.
-    """
-    Path(output_dir).mkdir(exist_ok=True)  # Ensure the output directory exists
-    fasta_files = []  # List to store the paths of the generated FASTA files
-
+    """Splits a multi-sequence FASTA file into individual FASTA files."""
+    ensure_directory_exists(output_dir)
+    fasta_files = []
     with open(input_file, "r") as fasta:
         sequence = []
         accession = None
         for line in fasta:
-            if line.startswith(">"):  # New sequence header
-                if accession:  # Save the previous sequence
+            if line.startswith(">"):
+                if accession:
                     file_path = f"{output_dir}/{accession}.fasta"
                     with open(file_path, "w") as out_fasta:
                         out_fasta.write("".join(sequence))
-                    fasta_files.append(file_path)  # Add to list of FASTA file paths
-                # Extract accession number from header
-                accession = line.split()[0][1:]  # Remove '>' and take first part
-                sequence = [line]  # Start a new sequence
+                    fasta_files.append(file_path)
+                accession = line.split()[0][1:]
+                sequence = [line]
             else:
                 sequence.append(line)
-        # Save the last sequence
         if accession:
             file_path = f"{output_dir}/{accession}.fasta"
             with open(file_path, "w") as out_fasta:
                 out_fasta.write("".join(sequence))
-            fasta_files.append(file_path)  # Add to list of FASTA file paths
-
+            fasta_files.append(file_path)
     return fasta_files
 
-
-
-
 def calculate_average_read_depth(bam_file):
-    """
-    Calculate the average read depth from a BAM file using samtools depth.
-    """
+    """Calculate average read depth from a BAM file using samtools depth."""
     try:
-        # Run samtools depth command
-        result = subprocess.run(
-            ["samtools", "depth", bam_file],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        # Process the output to calculate average depth
+        result = subprocess.run(["samtools", "depth", bam_file], capture_output=True, text=True, check=True)
         depths = [int(line.split()[2]) for line in result.stdout.splitlines()]
-        if depths:
-            average_depth = sum(depths) / len(depths)
-        else:
-            average_depth = 0
-        return average_depth
+        return sum(depths) / len(depths) if depths else 0
     except subprocess.CalledProcessError as e:
         logging.error(f"Error calculating read depth for {bam_file}: {e}")
         return None
+
 def get_best_reference(sample_r1, sample_r2, reference_list):
-    """
-    Align paired-end FASTQ files to a list of reference FASTA files using BWA
-    and return the best reference based on alignment scores.
-
-    Parameters:
-        sample_r1 (str): Path to the first paired-end FASTQ file.
-        sample_r2 (str): Path to the second paired-end FASTQ file.
-        reference_list (list): List of paths to reference FASTA files.
-
-    Returns:
-        str: The best reference file with the highest alignment score.
-    """
-    # Dictionary to store alignment scores
+    """Aligns paired-end FASTQ files to a list of reference FASTA files and returns the best reference."""
     alignment_scores = {}
-   
     for fasta in reference_list:
-        index_base = Path(fasta).stem  # Extract the base name for the index
-        output_sam = f"{index_base}_aligned.sam"  # SAM file for the output
+        index_base = Path(fasta).stem
+        output_sam = f"{index_base}_aligned.sam"
 
-        # Check if the BWA index exists; if not, create it
         if not Path(f"{fasta}.bwt").exists():
-            print(f"Index for {fasta} not found. Creating index...")
-            try:
-                subprocess.run(["bwa", "index", fasta], check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"Error in BWA index creation for {fasta}: {e}")
-                continue
+            subprocess.run(["bwa", "index", fasta], check=True)
 
-        # Run BWA for alignment
-        bwa_command = [
-            "bwa", "mem", fasta, sample_r1, sample_r2
-        ]
         try:
             with open(output_sam, "w") as sam_file:
-                subprocess.run(bwa_command, check=True, stdout=sam_file)
+                subprocess.run(["bwa", "mem", fasta, sample_r1, sample_r2], check=True, stdout=sam_file)
         except subprocess.CalledProcessError as e:
-            print(f"Error in BWA alignment for {fasta}: {e}")
+            logging.error(f"Error in BWA alignment for {fasta}: {e}")
             continue
 
-        # Parse alignment score from the SAM file
         score = 0
         try:
             with open(output_sam, "r") as sam_file:
                 for line in sam_file:
-                    if not line.startswith("@"):  # Skip header lines
+                    if not line.startswith("@"):
                         fields = line.strip().split("\t")
                         try:
-                            # Use the AS:i:<score> tag for alignment score (if available)
                             score += int([tag for tag in fields if tag.startswith("AS:i:")][0].split(":")[2])
                         except IndexError:
                             continue
         except FileNotFoundError:
-            print(f"Failed to open SAM file: {output_sam}")
+            logging.error(f"Failed to open SAM file: {output_sam}")
             continue
 
         alignment_scores[fasta] = score
 
-    # Pick the reference with the highest alignment score
-    if alignment_scores:
-        best_reference = max(alignment_scores, key=alignment_scores.get)
-        print(f"The best reference is {best_reference} with a score of {alignment_scores[best_reference]}")
-        return best_reference
-    else:
-        print("No alignments were successful.")
-        return None
+    return max(alignment_scores, key=alignment_scores.get) if alignment_scores else None
 
 def extract_sequence(fasta_file):
-    """Extracts the sequence from a FASTA file as a single string."""
+    """Extracts sequence from a FASTA file."""
     try:
         with open(fasta_file, "r") as f:
-            lines = f.readlines()
-            sequence = "".join(line.strip() for line in lines if not line.startswith(">"))
-        return sequence
+            return "".join(line.strip() for line in f if not line.startswith(">"))
     except Exception as e:
-        print(f"Error extracting sequence from {fasta_file}: {e}")
+        logging.error(f"Error extracting sequence from {fasta_file}: {e}")
         return ""
 
-def ref_based(df, run_bowtie, input_dir):
-    base_dir = "Fasta_files"
-    os.makedirs(base_dir, exist_ok=True)
+def fetch_reference_fasta(taxid, output_path):
+    """Fetches reference FASTA from NCBI if not already downloaded."""
+    if os.path.exists(output_path):
+        logging.info(f"Reference FASTA for taxid {taxid} already exists.")
+        return output_path
+
+    ensure_directory_exists(REFERENCE_DIR)
+    command = f'esearch -db nucleotide -query "txid{taxid}[Organism]" | efilter -source refseq | efetch -format fasta > {output_path}'
+    subprocess.run(command, shell=True, check=True)
     
-    taxids = df['NCBI_ID'].unique()
+    if not os.path.exists(output_path):
+        logging.error(f"FASTA file {output_path} was not created.")
+        return None
+
+    subprocess.run(f"bwa index {output_path}", shell=True, check=True)
+    return output_path
+
+def ref_based(df, run_bowtie, input_dir):
+    """Performs reference-based analysis for each taxon in the dataset."""
+    ensure_directory_exists(REFERENCE_DIR)
     df['Ref_len'] = ""
     df['Consensus_len'] = ""
     df['Completeness(%)'] = ""
-    df['Depth']=""
-    df["Accession_number"]=""
+    df['Depth'] = ""
+    df['Accession_number'] = ""
     df['sequence'] = ""
-    dfs = []
-
-    for tax in taxids:
+    
+    results = []
+    
+    for tax in df['NCBI_ID'].unique():
         dftax = df[df['NCBI_ID'] == tax].copy()
-        #scientific_name = dftax['Scientific_name'].iloc[0].replace(' ', '_')
-        scientific_name=dftax['Scientific_name'].iloc[0].replace(' ', '_').replace('/', '_')
+        scientific_name = dftax['Scientific_name'].iloc[0].replace(' ', '_').replace('/', '_')
+        fasta_path = os.path.join(REFERENCE_DIR, f"{scientific_name}_txid{tax}.fasta")
         
-        tax_dir = os.path.join(base_dir, f"{scientific_name}_txid{tax}")
-        os.makedirs(tax_dir, exist_ok=True)
-        fasta_file = os.path.join(tax_dir, f"{scientific_name}.fasta")
-        
-        command = f'esearch -db nucleotide -query "txid{tax}[Organism]" | efilter -source refseq | efetch -format fasta > {fasta_file}'
-        subprocess.run(command, shell=True, check=True)
-        
-        if not os.path.exists(fasta_file):
-            print(f"FASTA file {fasta_file} was not created.")
+        fasta_file = fetch_reference_fasta(tax, fasta_path)
+        if not fasta_file:
             continue
-        
-        bwa_ref = f"bwa index {fasta_file}"
-        subprocess.run(bwa_ref, shell=True, check=True)
         
         for sample in dftax['SampleID']:
             sample_r1 = os.path.join(input_dir, f"{sample}_unmapped_1.fastq.gz" if run_bowtie else f"{sample}_trimmed_R1.fastq.gz")
             sample_r2 = os.path.join(input_dir, f"{sample}_unmapped_2.fastq.gz" if run_bowtie else f"{sample}_trimmed_R2.fastq.gz")
             
-            sample_dir = os.path.join(base_dir, f"{scientific_name}_assembled1")
-            os.makedirs(sample_dir, exist_ok=True)
-                 # Example usage
-            input_files = fasta_file
-            #output_dir = f"{output_dir}/{sample}_{scientific_name}"
-            reference_list = split_fasta(input_files, sample_dir)
-            fasta_file=get_best_reference(sample_r1, sample_r2, reference_list)
-            cmd = f"grep '^>' {fasta_file} | cut -d ' ' -f1 | sed 's/^>//'"
-            ac = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
-            acc=ac.stdout.strip()
-
-            # To get the output as a list of sequence headers:
-            acc_ids = acc.stdout.strip().split("\n")[0]
+            sample_dir = os.path.join("Fasta_files", f"{scientific_name}_assembled")
+            ensure_directory_exists(sample_dir)
+            
+            reference_list = split_fasta(fasta_file, sample_dir)
+            best_ref = get_best_reference(sample_r1, sample_r2, reference_list)
+            if not best_ref:
+                continue
+            
+            acc_cmd = f"grep '^>' {best_ref} | cut -d ' ' -f1 | sed 's/^>//'"
+            acc = subprocess.run(acc_cmd, shell=True, capture_output=True, text=True, check=True).stdout.strip().split("\n")[0]
+            
             bam_file = os.path.join(sample_dir, f"{sample}_{scientific_name}_mapped_reads.bam")
             vcf_file = os.path.join(sample_dir, f"{sample}_{scientific_name}_variants.vcf")
             consensus_file = os.path.join(sample_dir, f"{sample}_{scientific_name}_consensus_genome.fa")
             
-            bwa_command = f"bwa mem -a -t 16 {fasta_file} {sample_r1} {sample_r2} | samtools view -u -@ 3 - | samtools sort -@ 16 -o {bam_file}"
-            subprocess.run(bwa_command, shell=True, check=True)
+            subprocess.run(f"bwa mem -a -t 16 {best_ref} {sample_r1} {sample_r2} | samtools view -u -@ 3 - | samtools sort -@ 16 -o {bam_file}", shell=True, check=True)
             subprocess.run(f"samtools index {bam_file}", shell=True, check=True)
-            subprocess.run(f"bcftools mpileup -f {fasta_file} {bam_file} | bcftools call -c --ploidy 1 -v -o {vcf_file}", shell=True, check=True)
-            subprocess.run(f"samtools mpileup -aa -A -d 0 -Q 0 -f {fasta_file} {bam_file} | ivar consensus -p {consensus_file} -t 0.5 -m 10 -n N", shell=True, check=True)
+            subprocess.run(f"bcftools mpileup -f {best_ref} {bam_file} | bcftools call -c --ploidy 1 -v -o {vcf_file}", shell=True, check=True)
+            subprocess.run(f"samtools mpileup -aa -A -d 0 -Q 0 -f {best_ref} {bam_file} | ivar consensus -p {consensus_file} -t 0.5 -m 10 -n N", shell=True, check=True)
+
+            ref_len = len(extract_sequence(best_ref))
+            consensus_len = len(extract_sequence(consensus_file))
+            completeness = round((consensus_len / ref_len) * 100, 2) if ref_len > 0 else 0
+            depth = calculate_average_read_depth(bam_file)
             
-            def calculate_length(fasta_file):
-                command = f"grep -v '^>' {fasta_file} | tr -d '\n' | tr -cd 'ACTG' | wc -c"
-                result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                return int(result.stdout.strip()) if result.stdout.strip().isdigit() else 0
-            
-            try:
-                ref_len = calculate_length(fasta_file)
-                consensus_len = calculate_length(consensus_file)
-                completeness = round((consensus_len / ref_len) * 100, 2) if ref_len > 0 else 0
-                sequence = extract_sequence(consensus_file)
-                depth=calculate_average_read_depth(bam_file)
-                
-                dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Consensus_len', 'Completeness(%)','Depth', 'Accession', 'sequence']] = [ref_len, consensus_len, completeness,depth, acc, sequence]
-            except Exception as e:
-                print(f"Error processing sample {sample}: {e}")
+            dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Consensus_len', 'Completeness(%)', 'Depth', 'Accession_number', 'sequence']] = [ref_len, consensus_len, completeness, depth, acc, extract_sequence(consensus_file)]
         
-        dfs.append(dftax)
+        results.append(dftax)
     
+    pd.concat(results).to_csv("Output-summary.csv", index=False)
+
     merged_df = pd.concat(dfs, ignore_index=True)
     
     
