@@ -164,7 +164,7 @@ def ref_based(df, run_bowtie, input_dir):
     
     pd.concat(results).to_csv("Output-summary.csv", index=False)
 
-    merged_df = pd.concat(dfs, ignore_index=True)
+    merged_df = pd.concat(results, ignore_index=True)
     
     
     filtered_df = merged_df[pd.to_numeric(merged_df['Completeness(%)'], errors='coerce') >= 60]
