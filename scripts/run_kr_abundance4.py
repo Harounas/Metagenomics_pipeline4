@@ -3,7 +3,13 @@ import glob
 import argparse
 import pandas as pd
 import sys
-from Metagenomics_pipeline.kraken_abundance_pipeline import process_sample, aggregate_kraken_results, generate_abundance_plots, process_all_ranks
+from Metagenomics_pipeline.kraken_abundance_pipeline import (
+    process_sample,
+    aggregate_kraken_results,
+    generate_abundance_plots,
+    process_all_ranks,
+    generate_unfiltered_merged_tsv  # Newly added import
+)
 from Metagenomics_pipeline.ref_based_assembly import ref_based
 from Metagenomics_pipeline.deno_ref_assembly2 import deno_ref_based
 import logging
@@ -73,7 +79,7 @@ def main():
     parser.add_argument("--max_read_count", type=int, default=5000000000, help="Maximum number of read counts")
     parser.add_argument("--run_ref_base", action="store_true", help="Run the additional processing pipeline for each taxon (BWA, Samtools, BCFtools, iVar)")
     parser.add_argument("--run_deno_ref", action="store_true", help="Run the additional processing pipeline for each taxon (BWA, Samtools, BCFtools, iVar)")
-    parser.add_argument("--process_all_ranks", action='store_true', help="Process and generate abundance plots for all taxonomic ranks (S, K, G, F).")
+    parser.add_argument("--process_all_ranks", action='store_true', help="Process and generate abundance plots for all taxonomic ranks (S, K, G, F), including unfiltered TSV.")
     parser.add_argument("--filtered_tsv", help="Path to the filtered merged Kraken output .tsv file for assembly (optional).")
     args = parser.parse_args()
 
@@ -131,6 +137,12 @@ def main():
                     logging.error(f"Metadata file '{args.metadata_file}' not found.")
                     sys.exit(1)
                 merged_tsv_path = aggregate_kraken_results(args.output_dir, metadata_file=args.metadata_file, read_count=args.read_count, max_read_count=args.max_read_count)
+        
+        # Optionally generate unfiltered TSV even if not processing all ranks
+        if args.no_metadata:
+            generate_unfiltered_merged_tsv(args.output_dir, sample_id_df=sample_id_df)
+        else:
+            generate_unfiltered_merged_tsv(args.output_dir, metadata_file=args.metadata_file)
     else:
         # Warn if filtered_tsv is provided with process_all_ranks
         if args.filtered_tsv:
@@ -139,11 +151,13 @@ def main():
             sample_id_df = create_sample_id_df(args.input_dir)
             logging.info("Using sample IDs as metadata.")
             sample_id_df.to_csv(os.path.join(args.output_dir, "sample_ids.csv"), index=False)
+            # Process all ranks, which includes generating the unfiltered TSV
             process_all_ranks(args.output_dir, sample_id_df=sample_id_df, read_count=args.read_count, max_read_count=args.max_read_count, top_N=args.top_N, col_filter=args.col_filter, pat_to_keep=args.pat_to_keep)
         else:
             if not args.metadata_file or not os.path.isfile(args.metadata_file):
                 logging.error(f"Metadata file '{args.metadata_file}' not found.")
                 sys.exit(1)
+            # Process all ranks, which includes generating the unfiltered TSV
             process_all_ranks(args.output_dir, metadata_file=args.metadata_file, read_count=args.read_count, max_read_count=args.max_read_count, top_N=args.top_N, col_filter=args.col_filter, pat_to_keep=args.pat_to_keep)
 
     # Generate abundance plots for species level
