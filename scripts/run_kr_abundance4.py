@@ -172,13 +172,26 @@ def main():
     # Run additional reference-based processing for species level
     if not args.process_all_ranks and merged_tsv_path and os.path.isfile(merged_tsv_path):
         df = pd.read_csv(merged_tsv_path, sep='\t')
-        df = df[df['Scientific_name'].str.contains('virus', case=False, na=False)]
-        df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
-
-        if args.run_ref_base:
+       
+        if args.run_ref_base and args.virus:
             logging.info("Starting reference-based pipeline.")
+            df = df[df['Scientific_name'].str.contains('virus', case=False, na=False)]
+            df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
             ref_based(df, run_bowtie, args.output_dir)
-        if args.run_deno_ref:
+        if args.run_ref_base and args.bacteria:
+            logging.info("Starting reference-based pipeline.")
+            df = df[~df['Scientific_name'].str.contains('virus', case=False, na=False)]
+            df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
+            ref_based(df, run_bowtie, args.output_dir)
+        if args.run_deno_ref and args.virus:
+            df = df[df['Scientific_name'].str.contains('virus', case=False, na=False)]
+            df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
+            logging.info("Starting de novo reference assembly pipeline.")
+            deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
+        
+        if args.run_deno_ref and args.Bacteria:
+            df = df[~df['Scientific_name'].str.contains('virus', case=False, na=False)]
+            df = df.apply(lambda col: col.map(lambda x: x.strip() if isinstance(x, str) else x))
             logging.info("Starting de novo reference assembly pipeline.")
             deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
 
