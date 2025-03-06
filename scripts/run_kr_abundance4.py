@@ -3,6 +3,8 @@ import glob
 import argparse
 import pandas as pd
 import sys
+import subprocess
+import logging
 from Metagenomics_pipeline.kraken_abundance_pipeline import (
     process_sample,
     aggregate_kraken_results,
@@ -13,7 +15,6 @@ from Metagenomics_pipeline.kraken_abundance_pipeline import (
 )
 from Metagenomics_pipeline.ref_based_assembly import ref_based
 from Metagenomics_pipeline.deno_ref_assembly2 import deno_ref_based
-import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -59,9 +60,40 @@ def read_contig_files(contig_file):
         sys.exit(1)
     return contig_paths
 
+def run_fastqc(input_dir, output_dir, threads):
+    """
+    Runs FastQC on all FASTQ files in the input directory.
+    
+    Args:
+        input_dir (str): Directory containing input FASTQ files.
+        output_dir (str): Directory to save FastQC output.
+        threads (int): Number of threads to use.
+    """
+    try:
+        # Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Get list of FASTQ files
+        fastq_files = glob.glob(os.path.join(input_dir, "*.fastq*"))
+        
+        if not fastq_files:
+            logging.warning("No FASTQ files found in the input directory.")
+            return
+        
+        # Run FastQC on each file
+        for fastq_file in fastq_files:
+            logging.info(f"Running FastQC on {fastq_file}")
+            subprocess.run(
+                ["fastqc", fastq_file, "-o", output_dir, "-t", str(threads)],
+                check=True
+            )
+        logging.info("FastQC completed successfully.")
+    except Exception as e:
+        logging.error(f"Error running FastQC: {e}")
+
 def main():
     # Set up argument parser
-    parser = argparse.ArgumentParser(description="Pipeline for Trimmomatic trimming, Bowtie2 host depletion (optional), and Kraken2 taxonomic classification.")
+    parser = argparse.ArgumentParser(description="Pipeline for FastQC, Trimmomatic trimming, Bowtie2 host depletion (optional), and Kraken2 taxonomic classification.")
     parser.add_argument("--kraken_db", required=True, help="Path to Kraken2 database.")
     parser.add_argument("--bowtie2_index", help="Path to Bowtie2 index (optional).")
     parser.add_argument("--output_dir", required=True, help="Directory to save output files.")
@@ -92,6 +124,10 @@ def main():
         logging.error(f"Kraken database directory '{args.kraken_db}' not found.")
         sys.exit(1)
 
+    # Step 1: Run FastQC
+    fastqc_output_dir = os.path.join(args.output_dir, "fastqc_output")
+    run_fastqc(args.input_dir, fastqc_output_dir, args.threads)
+
     # Determine if Bowtie2 should run
     run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
 
@@ -114,7 +150,7 @@ def main():
         else:
             logging.warning(f"No matching R2 file found for {base_name}. Skipping.")
 
-    # Run MultiQC on Trimmomatic output
+    # Step 2: Run MultiQC on FastQC and Trimmomatic output
     run_multiqc(args.output_dir)
 
     # Initialize merged_tsv_path
