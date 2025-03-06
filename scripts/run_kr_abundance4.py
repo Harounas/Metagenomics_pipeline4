@@ -8,7 +8,8 @@ from Metagenomics_pipeline.kraken_abundance_pipeline import (
     aggregate_kraken_results,
     generate_abundance_plots,
     process_all_ranks,
-    generate_unfiltered_merged_tsv  # Newly added import
+    generate_unfiltered_merged_tsv,
+    run_multiqc  # Import the run_multiqc function
 )
 from Metagenomics_pipeline.ref_based_assembly import ref_based
 from Metagenomics_pipeline.deno_ref_assembly2 import deno_ref_based
@@ -112,6 +113,9 @@ def main():
             process_sample(forward, reverse, base_name, args.bowtie2_index, args.kraken_db, args.output_dir, args.threads, run_bowtie, args.use_precomputed_reports)
         else:
             logging.warning(f"No matching R2 file found for {base_name}. Skipping.")
+
+    # Run MultiQC on Trimmomatic output
+    run_multiqc(args.output_dir)
 
     # Initialize merged_tsv_path
     merged_tsv_path = None
