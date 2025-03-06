@@ -10,6 +10,7 @@ from .kraken2 import run_kraken2
 import distinctipy
 import numpy as np
 import matplotlib.pyplot as plt
+import subprocess
 
 def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output_dir, threads, run_bowtie, use_precomputed_reports):
     try:
@@ -302,3 +303,12 @@ def process_all_ranks(kraken_dir, metadata_file=None, sample_id_df=None, read_co
             generate_abundance_plots(merged_tsv, top_N, col_filter, pat_to_keep, rank)
     
     return unfiltered_tsv  # Optionally return the path to the unfiltered TSV
+
+def run_multiqc(trimmomatic_output_dir):
+    """Runs MultiQC on Trimmomatic output files."""
+    try:
+        # Run MultiQC
+        subprocess.run(["multiqc", trimmomatic_output_dir], check=True)
+        print("MultiQC report generated successfully.")
+    except Exception as e:
+        print(f"Error running MultiQC: {e}")
