@@ -54,7 +54,7 @@ def read_contig_files(contig_file):
     contig_paths = []
     try:
         with open(contig_file, 'r') as f:
-            contig_paths = [line.strip() for line in f.readlines() if line.strip()]
+            contig_paths = [line.strip() for line in f.readlines() iff line.strip()]
     except FileNotFoundError:
         logging.error(f"Contig file '{contig_file}' not found.")
         sys.exit(1)
@@ -125,8 +125,8 @@ def main():
         sys.exit(1)
 
     # Step 1: Run FastQC
-    fastqc_output_dir = os.path.join(args.output_dir, "fastqc_output")
-    run_fastqc(args.input_dir, fastqc_output_dir, args.threads)
+    #fastqc_output_dir = os.path.join(args.output_dir, "fastqc_output")
+    run_fastqc(args.outout_dir, args.threads)
 
     # Determine if Bowtie2 should run
     run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
