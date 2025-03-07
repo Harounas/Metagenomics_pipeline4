@@ -60,7 +60,7 @@ def read_contig_files(contig_file):
         sys.exit(1)
     return contig_paths
 
-def run_fastqc(input_dir, output_dir, threads):
+def run_fastqc(output_dir, threads):
     """
     Runs FastQC on all FASTQ files in the input directory.
     
@@ -71,10 +71,10 @@ def run_fastqc(input_dir, output_dir, threads):
     """
     try:
         # Create output directory if it doesn't exist
-        os.makedirs(output_dir, exist_ok=True)
+        #os.makedirs(output_dir, exist_ok=True)
         
         # Get list of FASTQ files
-        fastq_files = glob.glob(os.path.join(input_dir, "*.fastq*"))
+        fastq_files = glob.glob(os.path.join(output_dir, "*trimmed*.fastq*"))
         
         if not fastq_files:
             logging.warning("No FASTQ files found in the input directory.")
