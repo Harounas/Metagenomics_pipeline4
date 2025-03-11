@@ -225,6 +225,8 @@ def main():
     parser.add_argument("--run_deno_ref", action="store_true", help="Run de novo reference assembly pipeline.")
     parser.add_argument("--process_all_ranks", action='store_true', help="Process all taxonomic ranks.")
     parser.add_argument("--filtered_tsv", help="Path to the filtered merged Kraken output TSV for assembly (optional).")
+    parser.add_argument("--skip_fastqc", action='store_true', help="Skip FastQC quality control.")
+    parser.add_argument("--skip_multiqc", action='store_true', help="Skip MultiQC report generation.")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
