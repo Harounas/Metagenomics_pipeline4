@@ -77,6 +77,21 @@ def main():
     parser.add_argument("--skip_fastqc", action='store_true', help="Skip FastQC quality control.")
     parser.add_argument("--skip_multiqc", action='store_true', help="Skip MultiQC report generation.")
     parser.add_argument("--max_read_count", type=int, default=5000000000, help="Maximum number of read counts")
+    # Define per-domain read count thresholds
+    min_read_counts = {
+    "Bacteria": args.min_read_bacteria,
+    "Viruses": args.min_read_virus,
+    "Archaea": args.min_read_archaea,
+    "Eukaryota": args.min_read_eukaryota
+               }
+
+    max_read_counts = {
+    "Bacteria": args.max_read_bacteria,
+    "Viruses": args.max_read_virus,
+    "Archaea": args.max_read_archaea,
+    "Eukaryota": args.max_read_eukaryota
+     }
+
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -142,7 +157,7 @@ def main():
     for domain in domains_to_process:
         logging.info(f"Aggregating results for domain: {domain}")
         merged_tsv = aggregate_kraken_results(args.output_dir, args.metadata_file, sample_id_df,
-                                               args.read_count, args.top_N, 'S', domain_filter=domain)
+                                               min_read_counts=min_read_counts, max_read_counts=max_read_counts, args.top_N, 'S', domain_filter=domain)
         if merged_tsv and os.path.isfile(merged_tsv):
             logging.info(f"Generating abundance plots for {domain}.")
             generate_abundance_plots(merged_tsv, args.top_N, None, None, 'S')
