@@ -119,7 +119,7 @@ def process_kraken_reports(kraken_dir):
                 output_path = os.path.join(
                     kraken_dir, f"{extracted_part}_{domain.replace(' ', '')}_kraken_report.txt"
                 )
-                df.to_csv(output_path, sep="\t", index=False)
+                df.to_csv(output_path, sep="\t", index=False,header=False)
                 logging.info(f"Saved {domain} data to {output_path}")
 
 def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
