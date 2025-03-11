@@ -157,7 +157,8 @@ def main():
     for domain in domains_to_process:
         logging.info(f"Aggregating results for domain: {domain}")
         merged_tsv = aggregate_kraken_results(args.output_dir, args.metadata_file, sample_id_df,
-                                               min_read_counts=min_read_counts, max_read_counts=max_read_counts, args.top_N, 'S', domain_filter=domain)
+                                          min_read_counts=min_read_counts, max_read_counts=max_read_counts,
+                                          rank_code='S', domain_filter=domain)
         if merged_tsv and os.path.isfile(merged_tsv):
             logging.info(f"Generating abundance plots for {domain}.")
             generate_abundance_plots(merged_tsv, args.top_N, None, None, 'S')
