@@ -11,7 +11,7 @@ from Metagenomics_pipeline.kraken_abundance_pipeline import (
     generate_abundance_plots,
     process_all_ranks,
     generate_unfiltered_merged_tsv,
-    run_multiqc,aggregate_kraken_results,process_kraken_reports,extract_domains_from_kraken_report,run_multiqc
+    run_multiqc,aggregate_kraken_results,process_kraken_reports,extract_domains_from_kraken_report,run_fastqc
 )
 from Metagenomics_pipeline.ref_based_assembly import ref_based
 from Metagenomics_pipeline.deno_ref_assembly2 import deno_ref_based
