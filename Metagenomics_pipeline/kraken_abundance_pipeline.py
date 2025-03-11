@@ -24,7 +24,7 @@ def process_sample(forward, reverse, base_name, bowtie2_index, kraken_db, output
                 unmapped_r1, unmapped_r2 = run_bowtie2(trimmed_forward, trimmed_reverse, base_name, bowtie2_index, output_dir, threads)
             else:
                 unmapped_r1, unmapped_r2 = trimmed_forward, trimmed_reverse
-            
+             
             # Step 3: Run Kraken2 with the reads
             kraken_report = run_kraken2(unmapped_r1, unmapped_r2, base_name, kraken_db, output_dir, threads)
         else:
