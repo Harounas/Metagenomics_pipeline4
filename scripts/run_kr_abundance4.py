@@ -215,6 +215,7 @@ def main():
     parser.add_argument("--read_count", type=int, default=1, help="Minimum read count threshold.")
     parser.add_argument("--top_N", type=int, default=10000, help="Select the top N most common taxa.")
     parser.add_argument("--no_bowtie2", action='store_true', help="Skip Bowtie2 host depletion.")
+    parser.add_argument("--use_precomputed_reports", action='store_true', help="Use precomputed Kraken reports instead of running Kraken2.")
     # Domain-specific flags for abundance plotting and assembly:
     parser.add_argument("--bacteria", action='store_true', help="Process Bacteria domain.")
     parser.add_argument("--virus", action='store_true', help="Process Viruses domain.")
@@ -251,7 +252,7 @@ def main():
         if reverse:
             logging.info(f"Processing sample {base_name} with paired files.")
             process_sample(forward, reverse, base_name, args.bowtie2_index, args.kraken_db,
-                           args.output_dir, args.threads, run_bowtie, False)
+                           args.output_dir, args.threads, run_bowtie,  args.use_precomputed_reports)
         else:
             logging.warning(f"No matching R2 file found for {base_name}. Skipping.")
 
