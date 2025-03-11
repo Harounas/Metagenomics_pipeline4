@@ -76,7 +76,7 @@ def main():
     parser.add_argument("--filtered_tsv", help="Path to the filtered merged Kraken output TSV for assembly (optional).")
     parser.add_argument("--skip_fastqc", action='store_true', help="Skip FastQC quality control.")
     parser.add_argument("--skip_multiqc", action='store_true', help="Skip MultiQC report generation.")
-    parser.add_argument("--read_count", type=int, default=1, help="Minimum read count threshold.")
+    parser.add_argument("--max_read_count", type=int, default=5000000000, help="Maximum number of read counts")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
