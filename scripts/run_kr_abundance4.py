@@ -77,6 +77,17 @@ def main():
     parser.add_argument("--skip_fastqc", action='store_true', help="Skip FastQC quality control.")
     parser.add_argument("--skip_multiqc", action='store_true', help="Skip MultiQC report generation.")
     parser.add_argument("--max_read_count", type=int, default=5000000000, help="Maximum number of read counts")
+    parser.add_argument("--min_read_bacteria", type=int, default=10, help="Minimum read count for Bacteria.")
+    parser.add_argument("--max_read_bacteria", type=int, default=1000000, help="Maximum read count for Bacteria.")
+    parser.add_argument("--min_read_virus", type=int, default=5, help="Minimum read count for Viruses.")
+    parser.add_argument("--max_read_virus", type=int, default=500000, help="Maximum read count for Viruses.")
+
+    parser.add_argument("--min_read_archaea", type=int, default=8, help="Minimum read count for Archaea.")
+    parser.add_argument("--max_read_archaea", type=int, default=800000, help="Maximum read count for Archaea.")
+
+    parser.add_argument("--min_read_eukaryota", type=int, default=20, help="Minimum read count for Eukaryota.")
+    parser.add_argument("--max_read_eukaryota", type=int, default=2000000, help="Maximum read count for Eukaryota.")
+
     # Define per-domain read count thresholds
     min_read_counts = {
     "Bacteria": args.min_read_bacteria,
