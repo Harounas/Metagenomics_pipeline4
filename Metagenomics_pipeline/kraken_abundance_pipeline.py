@@ -112,6 +112,7 @@ def process_kraken_reports(kraken_dir):
     for file_name in os.listdir(kraken_dir):
         if file_name.endswith("_report.txt"):
             parts = file_name.split('_')
+            parts = [item for item in parts if item not in ['Viruses', 'Eukaryota', 'Bacteria', 'Archae']]
             extracted_part = '_'.join(parts[:-2])
             kraken_report_path = os.path.join(kraken_dir, file_name)
             domains = extract_domains_from_kraken_report(kraken_report_path)
