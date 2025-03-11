@@ -11,7 +11,7 @@ from Metagenomics_pipeline.kraken_abundance_pipeline import (
     generate_abundance_plots,
     process_all_ranks,
     generate_unfiltered_merged_tsv,
-    run_multiqc
+    run_multiqc,aggregate_kraken_results,process_kraken_reports,extract_domains_from_kraken_report
 )
 from Metagenomics_pipeline.ref_based_assembly import ref_based
 from Metagenomics_pipeline.deno_ref_assembly2 import deno_ref_based
@@ -47,67 +47,9 @@ def read_contig_files(contig_file):
         sys.exit(1)
     return contig_paths
 
-def run_fastqc(output_dir, threads):
-    """
-    Runs FastQC on all FASTQ files in the output directory.
-    """
-    try:
-        fastq_files = glob.glob(os.path.join(output_dir, "*trimmed*.fastq*"))
-        if not fastq_files:
-            logging.warning("No FASTQ files found in the specified directory.")
-            return
-        for fastq_file in fastq_files:
-            logging.info(f"Running FastQC on {fastq_file}")
-            subprocess.run(
-                ["fastqc", fastq_file, "-o", output_dir, "-t", str(threads)],
-                check=True
-            )
-        logging.info("FastQC completed successfully.")
-    except Exception as e:
-        logging.error(f"Error running FastQC: {e}")
 
-def extract_domains_from_kraken_report(kraken_report_path):
-    """
-    Extracts rows for each domain (Bacteria, Eukaryota, Archaea, Viruses) from a Kraken2 report.
-    Returns a dictionary with keys as domain names and values as DataFrames.
-    """
-    columns = [
-        "Percentage", "Reads_Covered", "Reads_Assigned", "Rank_Code",
-        "NCBI_TaxID", "Scientific_Name"
-    ]
-    df = pd.read_csv(kraken_report_path, sep="\t", header=None, names=columns)
-    domains = {}
-    current_domain = None
-    current_rows = []
-    for _, row in df.iterrows():
-        if row["Rank_Code"] == "D":
-            if current_domain:
-                domains[current_domain] = pd.DataFrame(current_rows)
-            current_domain = row["Scientific_Name"]
-            current_rows = [row]
-        else:
-            current_rows.append(row)
-    if current_domain:
-        domains[current_domain] = pd.DataFrame(current_rows)
-    return domains
 
-def process_kraken_reports(kraken_dir):
-    """
-    Processes Kraken2 report files in kraken_dir by splitting each into domain-specific files.
-    The output filenames are of the form: {sample}_{DomainWithoutSpaces}_kraken_report.txt.
-    """
-    for file_name in os.listdir(kraken_dir):
-        if file_name.endswith("_report.txt"):
-            parts = file_name.split('_')
-            extracted_part = '_'.join(parts[:-2])
-            kraken_report_path = os.path.join(kraken_dir, file_name)
-            domains = extract_domains_from_kraken_report(kraken_report_path)
-            for domain, df in domains.items():
-                output_path = os.path.join(
-                    kraken_dir, f"{extracted_part}_{domain.replace(' ', '')}_kraken_report.txt"
-                )
-                df.to_csv(output_path, sep="\t", index=False)
-                logging.info(f"Saved {domain} data to {output_path}")
+
 
 def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
                              read_count=1, max_read_count=10**30, rank_code='S',
