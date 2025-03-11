@@ -45,7 +45,7 @@ def generate_sample_ids_csv(kraken_dir):
         sample_ids = []
         for file_name in os.listdir(kraken_dir):
             if file_name.endswith("_report.txt"):
-                sample_id = '_'.join(file_name.split('_')[:-2])
+                sample_id = '_'.join(file_name.split('_')[:-3])
                 sample_ids.append(sample_id)
         
         sampleid_df = pd.DataFrame(sample_ids, columns=['Sample_IDs'])
