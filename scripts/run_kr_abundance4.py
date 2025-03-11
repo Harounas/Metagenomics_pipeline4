@@ -235,7 +235,13 @@ def main():
         logging.error(f"Kraken database directory '{args.kraken_db}' not found.")
         sys.exit(1)
 
-    run_fastqc(args.output_dir, args.threads)
+    # Run FastQC conditionally
+    if not args.skip_fastqc:
+        run_fastqc(args.output_dir, args.threads)
+    else:
+        logging.info("Skipping FastQC per user request.")
+    
+    
     run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
 
     for forward in glob.glob(os.path.join(args.input_dir, "*_R1*.fastq*")):
@@ -257,9 +263,11 @@ def main():
                            args.output_dir, args.threads, run_bowtie,  args.use_precomputed_reports)
         else:
             logging.warning(f"No matching R2 file found for {base_name}. Skipping.")
-
-    run_multiqc(args.output_dir)
-    
+    # Run MultiQC conditionally
+    if not args.skip_multiqc:
+        run_multiqc(args.output_dir)
+    else:
+        logging.info("Skipping MultiQC per user request.")
     # Generate sample IDs CSV (if needed)
     if args.no_metadata:
         sample_id_df = create_sample_id_df(args.input_dir)
