@@ -87,6 +87,7 @@ def main():
 
     parser.add_argument("--min_read_eukaryota", type=int, default=20, help="Minimum read count for Eukaryota.")
     parser.add_argument("--max_read_eukaryota", type=int, default=2000000, help="Maximum read count for Eukaryota.")
+    args = parser.parse_args()
 
     # Define per-domain read count thresholds
     min_read_counts = {
@@ -103,7 +104,7 @@ def main():
     "Eukaryota": args.max_read_eukaryota
      }
 
-    args = parser.parse_args()
+   
 
     os.makedirs(args.output_dir, exist_ok=True)
 
