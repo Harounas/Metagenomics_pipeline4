@@ -147,9 +147,10 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
         # Define rank codes and file suffixes (adjust if needed)
         rank_map = {
             'S': ('S', ['S', 'S1', 'S2', 'S3'], ""),
-            'K': ('K', ['D', 'K'], "_K"),
-            'G': ('G', ['G'], "_G"),
-            'F': ('F', ['F'], "_F")
+            'K': ('K', ['K', 'K1','K2'], "_K"),
+            'G': ('G', ['G','G1','G2'], "_G"),
+            'F': ('F', ['F','F1','F2'], "_F"),
+            'D': ('D', ['D','D1','D2'], "_D")
         }
         
         if rank_code not in rank_map:
