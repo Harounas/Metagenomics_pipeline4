@@ -4,6 +4,7 @@ from collections import defaultdict
 import plotly.express as px
 import plotly.io as pio
 import os
+import logging
 from .trimmomatic import run_trimmomatic
 from .bowtie2 import run_bowtie2
 from .kraken2 import run_kraken2
