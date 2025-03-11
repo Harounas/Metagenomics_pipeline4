@@ -11,7 +11,7 @@ from Metagenomics_pipeline.kraken_abundance_pipeline import (
     generate_abundance_plots,
     process_all_ranks,
     generate_unfiltered_merged_tsv,
-    run_multiqc,aggregate_kraken_results,process_kraken_reports,extract_domains_from_kraken_report
+    run_multiqc,aggregate_kraken_results,process_kraken_reports,extract_domains_from_kraken_report,run_multiqc
 )
 from Metagenomics_pipeline.ref_based_assembly import ref_based
 from Metagenomics_pipeline.deno_ref_assembly2 import deno_ref_based
@@ -198,86 +198,8 @@ def generate_unfiltered_merged_tsv(kraken_dir, metadata_file=None, sample_id_df=
         logging.error(f"Error generating unfiltered merged TSV: {e}")
         return None
 
-def generate_abundance_plots(merged_tsv_path, top_N, col_filter, pat_to_keep, rank_code='S'):
-    """
-    Generates abundance plots for classifications at the specified rank code.
-    """
-    try:
-        df = pd.read_csv(merged_tsv_path, sep="\t")
-        df.columns = df.columns.str.replace('/', '_').str.replace(' ', '_')
-        df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-        df = df[df['Scientific_name'] != 'Homo sapiens']
-        if col_filter:
-            df = df[~df['Scientific_name'].isin(col_filter)]
-        if pat_to_keep:
-            df = df[df['Scientific_name'].isin(pat_to_keep)]
-        
-        rank_titles = {
-            'S': 'Species',
-            'K': 'Kingdom',
-            'G': 'Genus',
-            'F': 'Family'
-        }
-        rank_suffix = '' if rank_code == 'S' else f"_{rank_code}"
-        
-        # Example for plotting viral and bacterial abundance; similar logic can be applied for other domains.
-        for focus, filter_str, plot_title in [
-            (f'Virus_{rank_titles[rank_code]}', 'Virus', f'Viral_{rank_titles[rank_code]}'),
-            (f'Bacteria_{rank_titles[rank_code]}', 'Virus', f'Bacterial_{rank_titles[rank_code]}')
-        ]:
-            if focus.startswith('Bacteria'):
-                df_focus = df[~df['Scientific_name'].str.contains(filter_str, case=False, na=False)]
-            else:
-                df_focus = df[df['Scientific_name'].str.contains(filter_str, case=False, na=False)]
-            df_focus = df_focus.rename(columns={'Scientific_name': focus})
-            
-            if top_N:
-                top_N_categories = df_focus[focus].value_counts().head(top_N).index
-                df_focus = df_focus[df_focus[focus].isin(top_N_categories)]
-            
-            categorical_cols = df_focus.select_dtypes(include=['object']).columns.tolist()
-            if focus in categorical_cols:
-                categorical_cols.remove(focus)
-            
-            for col in categorical_cols:
-                grouped_sum = df_focus.groupby([focus, col])['Nr_frag_direct_at_taxon'].mean().reset_index()
-                # (Define colors, layout, etc. as needed.)
-                fig = px.bar(
-                    grouped_sum,
-                    x=col,
-                    y='Nr_frag_direct_at_taxon',
-                    color=focus,
-                    title=f"{plot_title} Abundance by {col}"
-                )
-                output_img = f"{plot_title}_Abundance_by_{col}{rank_suffix}.png"
-                fig.write_image(output_img, format='png', scale=3, width=1920, height=1080)
-                logging.info(f"Abundance plot saved to {output_img}")
-    
-    except Exception as e:
-        logging.error(f"Error generating abundance plots for rank {rank_code}: {e}")
 
-def process_all_ranks(kraken_dir, metadata_file=None, sample_id_df=None, read_count=1,
-                      max_read_count=10**30, top_N=None, col_filter=None, pat_to_keep=None):
-    """
-    Processes Kraken results, generates abundance plots for all rank codes (S, K, G, F),
-    and creates an unfiltered merged TSV.
-    """
-    unfiltered_tsv = generate_unfiltered_merged_tsv(kraken_dir, metadata_file, sample_id_df)
-    rank_codes = ['S', 'K', 'G', 'F']
-    for rank in rank_codes:
-        merged_tsv = aggregate_kraken_results(kraken_dir, metadata_file, sample_id_df,
-                                              read_count, max_read_count, rank)
-        if merged_tsv:
-            generate_abundance_plots(merged_tsv, top_N, col_filter, pat_to_keep, rank)
-    return unfiltered_tsv
 
-def run_multiqc(trimmomatic_output_dir):
-    """Runs MultiQC on Trimmomatic output files."""
-    try:
-        subprocess.run(["multiqc", trimmomatic_output_dir], check=True)
-        logging.info("MultiQC report generated successfully.")
-    except Exception as e:
-        logging.error(f"Error running MultiQC: {e}")
 
 def main():
     parser = argparse.ArgumentParser(
