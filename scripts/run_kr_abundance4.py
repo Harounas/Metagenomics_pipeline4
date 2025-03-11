@@ -105,7 +105,7 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
                         ncbi_ID = fields[4]
                         scientific_name = fields[5]
                         parts = file_name.split('_')
-                        extracted_part = '_'.join(parts[:-2])
+                        extracted_part = '_'.join(parts[:-3])
                         sampleandtaxonid = extracted_part + str(ncbi_ID)
                         
                         if rank_code_field in rank_codes and (read_count <= nr_frag_direct_at_taxon <= max_read_count):
