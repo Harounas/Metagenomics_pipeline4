@@ -124,15 +124,15 @@ def process_kraken_reports(kraken_dir):
                 logging.info(f"Saved {domain} data to {output_path}")
 
 def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
-                             read_count=1, max_read_count=10**30, rank_code='S',
-                             domain_filter=None):
+                             min_read_counts=None, max_read_counts=None, rank_code='S', domain_filter=None):
     """
-    Aggregates Kraken results at a specified rank code.
-    If domain_filter is provided (e.g. "Bacteria"), only files whose names contain that domain
-    (with spaces removed) will be processed. The output merged TSV filename reflects the domain.
+    Aggregates Kraken results at a specified rank code, applying per-domain read count filtering.
+
+    Args:
+        - min_read_counts (dict): Dictionary of minimum read count per domain.
+        - max_read_counts (dict): Dictionary of maximum read count per domain.
     """
     try:
-        # Load metadata
         if metadata_file:
             metadata = pd.read_csv(metadata_file, sep=",")
             logging.info("Using metadata from the provided metadata file.")
@@ -141,36 +141,21 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
             logging.info("Using sample IDs as metadata.")
         else:
             raise ValueError("Either metadata_file or sample_id_df must be provided.")
-        
+
         sample_id_col = metadata.columns[0]
-        
-        # Define rank codes and file suffixes (adjust if needed)
-        rank_map = {
-            'S': ('S', ['S', 'S1', 'S2', 'S3'], ""),
-            'K': ('K', ['K', 'K1','K2'], "_K"),
-            'G': ('G', ['G','G1','G2'], "_G"),
-            'F': ('F', ['F','F1','F2'], "_F"),
-            'D': ('D', ['D','D1','D2'], "_D")
-        }
-        
-        if rank_code not in rank_map:
-            raise ValueError("Invalid rank_code. Use 'S', 'K', 'G', or 'F'.")
-        
-        selected_rank, rank_codes, file_suffix = rank_map[rank_code]
-        
         aggregated_results = {}
-        
+
         for file_name in os.listdir(kraken_dir):
             if file_name.endswith("_report.txt"):
-                # If a domain_filter is provided, check that the filename contains it
                 if domain_filter and domain_filter.replace(' ', '') not in file_name:
                     continue
-                
+
                 with open(os.path.join(kraken_dir, file_name), 'r') as f:
                     for line in f:
                         fields = line.strip().split('\t')
                         if len(fields) < 6:
                             continue
+
                         perc_frag_cover = fields[0]
                         nr_frag_cover = fields[1]
                         nr_frag_direct_at_taxon = int(fields[2])
@@ -180,8 +165,19 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
                         parts = file_name.split('_')
                         extracted_part = '_'.join(parts[:-3])
                         sampleandtaxonid = extracted_part + str(ncbi_ID)
-                        
-                        if rank_code_field in rank_codes and (read_count <= nr_frag_direct_at_taxon <= max_read_count):
+
+                        # Determine domain
+                        domain = None
+                        for key in min_read_counts.keys():
+                            if key in file_name:
+                                domain = key
+                                break
+
+                        # Apply domain-specific min/max read count
+                        min_read = min_read_counts.get(domain, 1)
+                        max_read = max_read_counts.get(domain, 10**30)
+
+                        if rank_code_field == rank_code and (min_read <= nr_frag_direct_at_taxon <= max_read):
                             if extracted_part in metadata[sample_id_col].unique():
                                 sample_metadata = metadata.loc[metadata[sample_id_col] == extracted_part].iloc[0].to_dict()
                                 aggregated_results[sampleandtaxonid] = {
@@ -194,81 +190,22 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
                                     'SampleID': extracted_part,
                                     **sample_metadata
                                 }
-        
+
         domain_suffix = f"_{domain_filter.replace(' ', '')}" if domain_filter else ""
-        merged_tsv_path = os.path.join(kraken_dir, f"merged_kraken{file_suffix}{domain_suffix}.tsv")
+        merged_tsv_path = os.path.join(kraken_dir, f"merged_kraken_{rank_code}{domain_suffix}.tsv")
+        
         with open(merged_tsv_path, 'w') as f:
-            headers = ['Perc_frag_cover', 'Nr_frag_cover', 'Nr_frag_direct_at_taxon', 'Rank_code', 'NCBI_ID', 'Scientific_name', 'SampleID'] + metadata.columns[1:].tolist()
+            headers = ['Perc_frag_cover', 'Nr_frag_cover', 'Nr_frag_direct_at_taxon', 
+                       'Rank_code', 'NCBI_ID', 'Scientific_name', 'SampleID'] + metadata.columns[1:].tolist()
             f.write("\t".join(headers) + "\n")
             for data in aggregated_results.values():
                 f.write("\t".join(str(data[col]) for col in headers) + "\n")
-        
+
         logging.info(f"Aggregated results saved to {merged_tsv_path}")
         return merged_tsv_path
-    
+
     except Exception as e:
         logging.error(f"Error aggregating Kraken results: {e}")
-        return None
-
-def generate_unfiltered_merged_tsv(kraken_dir, metadata_file=None, sample_id_df=None):
-    """
-    Generates a merged TSV file containing Kraken report data for all ranks without filtering.
-    """
-    try:
-        if metadata_file:
-            metadata = pd.read_csv(metadata_file, sep=",")
-            logging.info("Using metadata from the provided metadata file.")
-        elif sample_id_df is not None:
-            metadata = sample_id_df
-            logging.info("Using sample IDs as metadata.")
-        else:
-            raise ValueError("Either metadata_file or sample_id_df must be provided.")
-        
-        sample_id_col = metadata.columns[0]
-        unfiltered_results = {}
-        
-        for file_name in os.listdir(kraken_dir):
-            if file_name.endswith("_report.txt"):
-                with open(os.path.join(kraken_dir, file_name), 'r') as f:
-                    for line in f:
-                        fields = line.strip().split('\t')
-                        if len(fields) < 6:
-                            continue
-                        perc_frag_cover = fields[0]
-                        nr_frag_cover = fields[1]
-                        nr_frag_direct_at_taxon = int(fields[2])
-                        rank_code_field = fields[3]
-                        ncbi_ID = fields[4]
-                        scientific_name = fields[5]
-                        parts = file_name.split('_')
-                        extracted_part = '_'.join(parts[:-2])
-                        sampleandtaxonid = extracted_part + str(ncbi_ID)
-                        
-                        if extracted_part in metadata[sample_id_col].unique():
-                            sample_metadata = metadata.loc[metadata[sample_id_col] == extracted_part].iloc[0].to_dict()
-                            unfiltered_results[sampleandtaxonid] = {
-                                'Perc_frag_cover': perc_frag_cover,
-                                'Nr_frag_cover': nr_frag_cover,
-                                'Nr_frag_direct_at_taxon': nr_frag_direct_at_taxon,
-                                'Rank_code': rank_code_field,
-                                'NCBI_ID': ncbi_ID,
-                                'Scientific_name': scientific_name,
-                                'SampleID': extracted_part,
-                                **sample_metadata
-                            }
-        
-        merged_tsv_path = os.path.join(kraken_dir, "merged_kraken_all_ranks_unfiltered.tsv")
-        with open(merged_tsv_path, 'w') as f:
-            headers = ['Perc_frag_cover', 'Nr_frag_cover', 'Nr_frag_direct_at_taxon', 'Rank_code', 'NCBI_ID', 'Scientific_name', 'SampleID'] + metadata.columns[1:].tolist()
-            f.write("\t".join(headers) + "\n")
-            for data in unfiltered_results.values():
-                f.write("\t".join(str(data[col]) for col in headers) + "\n")
-        
-        logging.info(f"Unfiltered merged Kraken results saved to {merged_tsv_path}")
-        return merged_tsv_path
-    
-    except Exception as e:
-        logging.error(f"Error generating unfiltered merged TSV: {e}")
         return None
 
 def generate_abundance_plots(merged_tsv_path, top_N, col_filter, pat_to_keep, rank_code='S'):
