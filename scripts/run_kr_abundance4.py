@@ -89,6 +89,9 @@ def main():
     # New arguments for filtering:
     parser.add_argument("--col_filter", nargs='+', help="List of taxa to filter out.")
     parser.add_argument("--pat_to_keep", nargs='+', help="List of taxa to retain.")
+    # New flag: if set, skip Kraken report processing and abundance plot generation,
+    # and directly generate the unfiltered TSV to pass to genome assembly.
+    parser.add_argument("--skip_reports", action='store_true', help="Skip processing Kraken reports and generating plots; directly run genome assembly.")
     args = parser.parse_args()
 
     # Define per-domain read count thresholds
@@ -151,56 +154,71 @@ def main():
     else:
         sample_id_df = None
 
-    # Process domain-specific Kraken reports
-    process_kraken_reports(args.output_dir)
-    
-    # For each domain flag provided, aggregate results and run abundance plots and assembly pipelines.
-    domains_to_process = []
-    if args.bacteria:
-        domains_to_process.append("Bacteria")
-    if args.virus:
-        domains_to_process.append("Viruses")
-    if args.archaea:
-        domains_to_process.append("Archaea")
-    if args.eukaryota:
-        domains_to_process.append("Eukaryota")
-    
-    # Define the rank codes to generate for each domain.
-    # For Bacteria, Archaea, and Eukaryota: species, family, domain, and kingdom.
-    # For Viruses: species, family, and domain.
-    domain_rank_codes = {
-        "Bacteria": ['S', 'F', 'D', 'K'],
-        "Viruses": ['S', 'F', 'D'],
-        "Archaea": ['S', 'F', 'D', 'K'],
-        "Eukaryota": ['S', 'F', 'D', 'K']
-    }
-    
-    for domain in domains_to_process:
-        logging.info(f"Aggregating results for domain: {domain}")
-        # Process each desired rank for the current domain.
-        for rank in domain_rank_codes.get(domain, ['S']):
-            merged_tsv = aggregate_kraken_results(
-                args.output_dir,
-                args.metadata_file,
-                sample_id_df,
-                min_read_counts=min_read_counts,
-                max_read_counts=max_read_counts,
-                rank_code=rank,
-                domain_filter=domain
-            )
-            if merged_tsv and os.path.isfile(merged_tsv):
-                logging.info(f"Generating abundance plots for {domain} at rank {rank}.")
-                generate_abundance_plots(merged_tsv, args.top_N, args.col_filter, args.pat_to_keep, rank)
-                if args.run_ref_base:
-                    df = pd.read_csv(merged_tsv, sep="\t")
-                    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-                    logging.info(f"Starting reference-based assembly for {domain} at rank {rank}.")
-                    ref_based(df, run_bowtie, args.output_dir)
-                if args.run_deno_ref:
-                    df = pd.read_csv(merged_tsv, sep="\t")
-                    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-                    logging.info(f"Starting de novo reference assembly for {domain} at rank {rank}.")
-                    deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
+    if not args.skip_reports:
+        # Process domain-specific Kraken reports
+        process_kraken_reports(args.output_dir)
+        
+        # For each domain flag provided, aggregate results and run abundance plots and assembly pipelines.
+        domains_to_process = []
+        if args.bacteria:
+            domains_to_process.append("Bacteria")
+        if args.virus:
+            domains_to_process.append("Viruses")
+        if args.archaea:
+            domains_to_process.append("Archaea")
+        if args.eukaryota:
+            domains_to_process.append("Eukaryota")
+        
+        # Define the rank codes to generate for each domain.
+        # For Bacteria, Archaea, and Eukaryota: species, family, domain, and kingdom.
+        # For Viruses: species, family, and domain.
+        domain_rank_codes = {
+            "Bacteria": ['S', 'F', 'D', 'K'],
+            "Viruses": ['S', 'F', 'D'],
+            "Archaea": ['S', 'F', 'D', 'K'],
+            "Eukaryota": ['S', 'F', 'D', 'K']
+        }
+        
+        for domain in domains_to_process:
+            logging.info(f"Aggregating results for domain: {domain}")
+            for rank in domain_rank_codes.get(domain, ['S']):
+                merged_tsv = aggregate_kraken_results(
+                    args.output_dir,
+                    args.metadata_file,
+                    sample_id_df,
+                    min_read_counts=min_read_counts,
+                    max_read_counts=max_read_counts,
+                    rank_code=rank,
+                    domain_filter=domain
+                )
+                if merged_tsv and os.path.isfile(merged_tsv):
+                    logging.info(f"Generating abundance plots for {domain} at rank {rank}.")
+                    generate_abundance_plots(merged_tsv, args.top_N, args.col_filter, args.pat_to_keep, rank)
+                    if args.run_ref_base:
+                        df = pd.read_csv(merged_tsv, sep="\t")
+                        df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+                        logging.info(f"Starting reference-based assembly for {domain} at rank {rank}.")
+                        ref_based(df, run_bowtie, args.output_dir)
+                    if args.run_deno_ref:
+                        df = pd.read_csv(merged_tsv, sep="\t")
+                        df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+                        logging.info(f"Starting de novo reference assembly for {domain} at rank {rank}.")
+                        deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
+    else:
+        logging.info("Skipping domain-specific report processing and plot generation. Running genome assembly directly using unfiltered merged TSV.")
+        # When skipping report processing, generate an unfiltered TSV and use it for assembly.
+        merged_tsv = generate_unfiltered_merged_tsv(args.output_dir, args.metadata_file, sample_id_df)
+        if merged_tsv and os.path.isfile(merged_tsv):
+            if args.run_ref_base:
+                df = pd.read_csv(merged_tsv, sep="\t")
+                df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+                logging.info("Starting reference-based assembly for all genomes using unfiltered TSV.")
+                ref_based(df, run_bowtie, args.output_dir)
+            if args.run_deno_ref:
+                df = pd.read_csv(merged_tsv, sep="\t")
+                df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+                logging.info("Starting de novo reference assembly for all genomes using unfiltered TSV.")
+                deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
     
     # Optionally process all ranks (if --process_all_ranks is set)
     if args.process_all_ranks:
