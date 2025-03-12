@@ -127,12 +127,17 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
                              min_read_counts=None, max_read_counts=None, rank_code='S', domain_filter=None):
     """
     Aggregates Kraken results at a specified rank code, applying per-domain read count filtering.
-
+    
+    For example, at species level (default 'S'), rows with Rank_code in ['S', 'S1', 'S2', 'S3']
+    are selected; at Family level ('F'), rows with Rank_code in ['F', 'F1', 'F2', 'F3'] are selected,
+    and so on.
+    
     Args:
         - min_read_counts (dict): Dictionary of minimum read count per domain.
         - max_read_counts (dict): Dictionary of maximum read count per domain.
     """
     try:
+        # Load metadata
         if metadata_file:
             metadata = pd.read_csv(metadata_file, sep=",")
             logging.info("Using metadata from the provided metadata file.")
@@ -141,13 +146,21 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
             logging.info("Using sample IDs as metadata.")
         else:
             raise ValueError("Either metadata_file or sample_id_df must be provided.")
-
+        
         sample_id_col = metadata.columns[0]
         aggregated_results = {}
-
+        
+        # Define rank mapping: keys are desired rank level; values are acceptable rank codes.
+        rank_mapping = {
+            'S': ['S', 'S1', 'S2', 'S3'],
+            'K': ['K', 'K1', 'K2', 'K3'],
+            'F': ['F', 'F1', 'F2', 'F3'],
+            'D': ['D', 'D1', 'D2', 'D3']
+        }
+        
         for file_name in os.listdir(kraken_dir):
             if file_name.endswith("_report.txt"):
-                if domain_filter and domain_filter.replace(' ', '') not in file_name:
+                if domain_filter and domain_filter.replace(' ', '').lower() not in file_name.lower():
                     continue
 
                 with open(os.path.join(kraken_dir, file_name), 'r') as f:
@@ -166,10 +179,10 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
                         extracted_part = '_'.join(parts[:-3])
                         sampleandtaxonid = extracted_part + str(ncbi_ID)
 
-                        # Determine domain
+                        # Determine domain from file name using keys in min_read_counts
                         domain = None
                         for key in min_read_counts.keys():
-                            if key in file_name:
+                            if key.lower() in file_name.lower():
                                 domain = key
                                 break
 
@@ -177,7 +190,9 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
                         min_read = min_read_counts.get(domain, 1)
                         max_read = max_read_counts.get(domain, 10**30)
 
-                        if rank_code_field == rank_code and (min_read <= nr_frag_direct_at_taxon <= max_read):
+                        # Filter rows using the rank mapping
+                        if rank_code_field in rank_mapping.get(rank_code, [rank_code]) and \
+                           (min_read <= nr_frag_direct_at_taxon <= max_read):
                             if extracted_part in metadata[sample_id_col].unique():
                                 sample_metadata = metadata.loc[metadata[sample_id_col] == extracted_part].iloc[0].to_dict()
                                 aggregated_results[sampleandtaxonid] = {
@@ -190,8 +205,8 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
                                     'SampleID': extracted_part,
                                     **sample_metadata
                                 }
-
-        domain_suffix = f"_{domain_filter.replace(' ', '')}" if domain_filter else ""
+        
+        domain_suffix = f"_{domain_filter.replace(' ', '')}" if domain_filter else "_all"
         merged_tsv_path = os.path.join(kraken_dir, f"merged_kraken_{rank_code}{domain_suffix}.tsv")
         
         with open(merged_tsv_path, 'w') as f:
@@ -200,7 +215,7 @@ def aggregate_kraken_results(kraken_dir, metadata_file=None, sample_id_df=None,
             f.write("\t".join(headers) + "\n")
             for data in aggregated_results.values():
                 f.write("\t".join(str(data[col]) for col in headers) + "\n")
-
+        
         logging.info(f"Aggregated results saved to {merged_tsv_path}")
         return merged_tsv_path
 
@@ -274,42 +289,58 @@ def generate_abundance_plots(merged_tsv_path, top_N, col_filter, pat_to_keep, ra
     """
     Generates abundance plots for classifications at the specified rank code,
     considering Viruses, Eukaryota, Bacteria, and Archaea.
+    
+    For example, at species level (default), rows with Rank_code in ['S','S1','S2','S3']
+    are selected; similarly for other ranks.
     """
     try:
-        df = pd.read_csv(merged_tsv_path, sep="\t")
-        df.columns = df.columns.str.replace('/', '_').str.replace(' ', '_')
-        df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-        df = df[df['Scientific_name'] != 'Homo sapiens']
+        # Get the directory where the aggregated TSV files are stored.
+        kraken_dir = os.path.dirname(merged_tsv_path)
         
-        if col_filter:
-            df = df[~df['Scientific_name'].isin(col_filter)]
-        if pat_to_keep:
-            df = df[df['Scientific_name'].isin(pat_to_keep)]
-        
-        rank_titles = {
-            'S': 'Species',
-            'K': 'Kingdom',
-            'G': 'Genus',
-            'F': 'Family'
-        }
+        # Define human-friendly rank titles and a suffix for file naming.
+        rank_titles = {'S': 'Species', 'K': 'Kingdom', 'G': 'Genus', 'F': 'Family'}
         rank_suffix = '' if rank_code == 'S' else f"_{rank_code}"
         
+        # Mapping for rank-level filtering.
+        rank_mapping = {
+            'S': ['S', 'S1', 'S2', 'S3'],
+            'K': ['K', 'K1', 'K2', 'K3'],
+            'G': ['G', 'G1', 'G2', 'G3'],
+            'F': ['F', 'F1', 'F2', 'F3'],
+            'D': ['D', 'D1', 'D2', 'D3']
+        }
+        
+        # Define the domain-specific TSV files based on the current rank.
         categories = [
-            ('Viruses', 'merged_kraken_' + rank_code + '_Virus.tsv', 'Viral'),
-            ('Bacteria', 'merged_kraken_' + rank_code + '_Bacteria.tsv', 'Bacterial'),
-            ('Archaea', 'merged_kraken_' + rank_code + '_Archaea.tsv', 'Archaeal'),
-            ('Eukaryota', 'merged_kraken_' + rank_code + '_Eukaryota.tsv', 'Eukaryotic')
+            ('Viruses', os.path.join(kraken_dir, f"merged_kraken_{rank_code}_Viruses.tsv"), 'Viral'),
+            ('Bacteria', os.path.join(kraken_dir, f"merged_kraken_{rank_code}_Bacteria.tsv"), 'Bacterial'),
+            ('Archaea', os.path.join(kraken_dir, f"merged_kraken_{rank_code}_Archaea.tsv"), 'Archaeal'),
+            ('Eukaryota', os.path.join(kraken_dir, f"merged_kraken_{rank_code}_Eukaryota.tsv"), 'Eukaryotic')
         ]
         
         for focus, file_name, plot_title in categories:
             try:
+                # Load the domain-specific aggregated TSV file.
                 df_focus = pd.read_csv(file_name, sep="\t")
+                
+                # Filter rows by Rank_code using the rank mapping.
+                df_focus = df_focus[df_focus['Rank_code'].isin(rank_mapping.get(rank_code, [rank_code]))]
+                
+                # Rename the 'Scientific_name' column to the current domain name.
                 df_focus = df_focus.rename(columns={'Scientific_name': focus})
                 
+                # Optionally restrict to top N categories.
                 if top_N:
                     top_N_categories = df_focus[focus].value_counts().head(top_N).index
                     df_focus = df_focus[df_focus[focus].isin(top_N_categories)]
                 
+                # Optionally apply additional filtering.
+                if col_filter:
+                    df_focus = df_focus[~df_focus[focus].isin(col_filter)]
+                if pat_to_keep:
+                    df_focus = df_focus[df_focus[focus].isin(pat_to_keep)]
+                
+                # Identify categorical columns (excluding the domain column).
                 categorical_cols = df_focus.select_dtypes(include=['object']).columns.tolist()
                 if focus in categorical_cols:
                     categorical_cols.remove(focus)
