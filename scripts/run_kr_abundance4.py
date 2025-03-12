@@ -62,7 +62,7 @@ def main():
     parser.add_argument("--metadata_file", help="Path to the metadata CSV file (optional).")
     parser.add_argument("--no_metadata", action='store_true', help="Use sample IDs as metadata instead of a metadata file.")
     parser.add_argument("--read_count", type=int, default=1, help="Minimum read count threshold.")
-    parser.add_argument("--top_N", type=int, default=10**8, help="Select the top N most common taxa.")
+    parser.add_argument("--top_N", type=int, default=10**13, help="Select the top N most common taxa.")
     parser.add_argument("--no_bowtie2", action='store_true', help="Skip Bowtie2 host depletion.")
     parser.add_argument("--use_precomputed_reports", action='store_true', help="Use precomputed Kraken reports instead of running Kraken2.")
     # Domain-specific flags for abundance plotting and assembly:
