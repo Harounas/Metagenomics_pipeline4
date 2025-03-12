@@ -272,13 +272,15 @@ def generate_unfiltered_merged_tsv(kraken_dir, metadata_file=None, sample_id_df=
 
 def generate_abundance_plots(merged_tsv_path, top_N, col_filter, pat_to_keep, rank_code='S'):
     """
-    Generates abundance plots for classifications at the specified rank code.
+    Generates abundance plots for classifications at the specified rank code,
+    considering Viruses, Eukaryota, Bacteria, and Archaea.
     """
     try:
         df = pd.read_csv(merged_tsv_path, sep="\t")
         df.columns = df.columns.str.replace('/', '_').str.replace(' ', '_')
         df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
         df = df[df['Scientific_name'] != 'Homo sapiens']
+        
         if col_filter:
             df = df[~df['Scientific_name'].isin(col_filter)]
         if pat_to_keep:
@@ -292,15 +294,15 @@ def generate_abundance_plots(merged_tsv_path, top_N, col_filter, pat_to_keep, ra
         }
         rank_suffix = '' if rank_code == 'S' else f"_{rank_code}"
         
-        # Example for plotting viral and bacterial abundance; similar logic can be applied for other domains.
-        for focus, filter_str, plot_title in [
-            (f'Virus_{rank_titles[rank_code]}', 'Virus', f'Viral_{rank_titles[rank_code]}'),
-            (f'Bacteria_{rank_titles[rank_code]}', 'Virus', f'Bacterial_{rank_titles[rank_code]}')
-        ]:
-            if focus.startswith('Bacteria'):
-                df_focus = df[~df['Scientific_name'].str.contains(filter_str, case=False, na=False)]
-            else:
-                df_focus = df[df['Scientific_name'].str.contains(filter_str, case=False, na=False)]
+        categories = [
+            ('Viruses', 'Virus', 'Viral'),
+            ('Bacteria', 'Bacteria', 'Bacterial'),
+            ('Archaea', 'Archaea', 'Archaeal'),
+            ('Eukaryota', 'Eukaryota', 'Eukaryotic')
+        ]
+        
+        for focus, filter_str, plot_title in categories:
+            df_focus = df[df['Scientific_name'].str.contains(filter_str, case=False, na=False)]
             df_focus = df_focus.rename(columns={'Scientific_name': focus})
             
             if top_N:
@@ -313,13 +315,13 @@ def generate_abundance_plots(merged_tsv_path, top_N, col_filter, pat_to_keep, ra
             
             for col in categorical_cols:
                 grouped_sum = df_focus.groupby([focus, col])['Nr_frag_direct_at_taxon'].mean().reset_index()
-                # (Define colors, layout, etc. as needed.)
+                
                 fig = px.bar(
                     grouped_sum,
                     x=col,
                     y='Nr_frag_direct_at_taxon',
                     color=focus,
-                    title=f"{plot_title} Abundance by {col}"
+                    title=f"{plot_title} {rank_titles[rank_code]} Abundance by {col}"
                 )
                 output_img = f"{plot_title}_Abundance_by_{col}{rank_suffix}.png"
                 fig.write_image(output_img, format='png', scale=3, width=1920, height=1080)
