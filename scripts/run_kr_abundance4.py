@@ -11,7 +11,11 @@ from Metagenomics_pipeline.kraken_abundance_pipeline import (
     generate_abundance_plots,
     process_all_ranks,
     generate_unfiltered_merged_tsv,
-    run_multiqc,aggregate_kraken_results,process_kraken_reports,extract_domains_from_kraken_report,run_fastqc
+    run_multiqc,
+    aggregate_kraken_results,
+    process_kraken_reports,
+    extract_domains_from_kraken_report,
+    run_fastqc
 )
 from Metagenomics_pipeline.ref_based_assembly import ref_based
 from Metagenomics_pipeline.deno_ref_assembly2 import deno_ref_based
@@ -47,9 +51,6 @@ def read_contig_files(contig_file):
         sys.exit(1)
     return contig_paths
 
-
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Pipeline for FastQC, trimming, host depletion, and Kraken2 taxonomic classification."
@@ -81,30 +82,28 @@ def main():
     parser.add_argument("--max_read_bacteria", type=int, default=10**13, help="Maximum read count for Bacteria.")
     parser.add_argument("--min_read_virus", type=int, default=1, help="Minimum read count for Viruses.")
     parser.add_argument("--max_read_virus", type=int, default=10**13, help="Maximum read count for Viruses.")
-
     parser.add_argument("--min_read_archaea", type=int, default=1, help="Minimum read count for Archaea.")
     parser.add_argument("--max_read_archaea", type=int, default=10**13, help="Maximum read count for Archaea.")
-
     parser.add_argument("--min_read_eukaryota", type=int, default=1, help="Minimum read count for Eukaryota.")
     parser.add_argument("--max_read_eukaryota", type=int, default=10**13, help="Maximum read count for Eukaryota.")
+    # New arguments for filtering:
+    parser.add_argument("--col_filter", nargs='+', help="List of taxa to filter out.")
+    parser.add_argument("--pat_to_keep", nargs='+', help="List of taxa to retain.")
     args = parser.parse_args()
 
     # Define per-domain read count thresholds
     min_read_counts = {
-    "Bacteria": args.min_read_bacteria,
-    "Viruses": args.min_read_virus,
-    "Archaea": args.min_read_archaea,
-    "Eukaryota": args.min_read_eukaryota
-               }
-
+        "Bacteria": args.min_read_bacteria,
+        "Viruses": args.min_read_virus,
+        "Archaea": args.min_read_archaea,
+        "Eukaryota": args.min_read_eukaryota
+    }
     max_read_counts = {
-    "Bacteria": args.max_read_bacteria,
-    "Viruses": args.max_read_virus,
-    "Archaea": args.max_read_archaea,
-    "Eukaryota": args.max_read_eukaryota
-     }
-
-   
+        "Bacteria": args.max_read_bacteria,
+        "Viruses": args.max_read_virus,
+        "Archaea": args.max_read_archaea,
+        "Eukaryota": args.max_read_eukaryota
+    }
 
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -118,7 +117,6 @@ def main():
     else:
         logging.info("Skipping FastQC per user request.")
     
-    
     run_bowtie = not args.no_bowtie2 and args.bowtie2_index is not None
 
     for forward in glob.glob(os.path.join(args.input_dir, "*_R1*.fastq*")):
@@ -127,7 +125,6 @@ def main():
         base_name = base_name.replace("_R1.fastq.gz", "").replace("_R1.fastq", "")
         base_name = base_name.replace("R1.fastq.gz", "").replace("R1.fastq", "")
         base_name = base_name.replace("_R1_001", "").replace("_R1", "")
-
         reverse_candidates = [
             os.path.join(args.input_dir, f"{base_name}_R2_001.fastq.gz"),
             os.path.join(args.input_dir, f"{base_name}_R2.fastq.gz"),
@@ -137,14 +134,16 @@ def main():
         if reverse:
             logging.info(f"Processing sample {base_name} with paired files.")
             process_sample(forward, reverse, base_name, args.bowtie2_index, args.kraken_db,
-                           args.output_dir, args.threads, run_bowtie,  args.use_precomputed_reports)
+                           args.output_dir, args.threads, run_bowtie, args.use_precomputed_reports)
         else:
             logging.warning(f"No matching R2 file found for {base_name}. Skipping.")
+    
     # Run MultiQC conditionally
     if not args.skip_multiqc:
         run_multiqc(args.output_dir)
     else:
         logging.info("Skipping MultiQC per user request.")
+    
     # Generate sample IDs CSV (if needed)
     if args.no_metadata:
         sample_id_df = create_sample_id_df(args.input_dir)
@@ -166,24 +165,42 @@ def main():
     if args.eukaryota:
         domains_to_process.append("Eukaryota")
     
+    # Define the rank codes to generate for each domain.
+    # For Bacteria, Archaea, and Eukaryota: species, family, domain, and kingdom.
+    # For Viruses: species, family, and domain.
+    domain_rank_codes = {
+        "Bacteria": ['S', 'F', 'D', 'K'],
+        "Viruses": ['S', 'F', 'D'],
+        "Archaea": ['S', 'F', 'D', 'K'],
+        "Eukaryota": ['S', 'F', 'D', 'K']
+    }
+    
     for domain in domains_to_process:
         logging.info(f"Aggregating results for domain: {domain}")
-        merged_tsv = aggregate_kraken_results(args.output_dir, args.metadata_file, sample_id_df,
-                                          min_read_counts=min_read_counts, max_read_counts=max_read_counts,
-                                          rank_code='S', domain_filter=domain)
-        if merged_tsv and os.path.isfile(merged_tsv):
-            logging.info(f"Generating abundance plots for {domain}.")
-            generate_abundance_plots(merged_tsv, args.top_N, None, None, 'S')
-            if args.run_ref_base:
-                df = pd.read_csv(merged_tsv, sep="\t")
-                df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-                logging.info(f"Starting reference-based assembly for {domain}.")
-                ref_based(df, run_bowtie, args.output_dir)
-            if args.run_deno_ref:
-                df = pd.read_csv(merged_tsv, sep="\t")
-                df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-                logging.info(f"Starting de novo reference assembly for {domain}.")
-                deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
+        # Process each desired rank for the current domain.
+        for rank in domain_rank_codes.get(domain, ['S']):
+            merged_tsv = aggregate_kraken_results(
+                args.output_dir,
+                args.metadata_file,
+                sample_id_df,
+                min_read_counts=min_read_counts,
+                max_read_counts=max_read_counts,
+                rank_code=rank,
+                domain_filter=domain
+            )
+            if merged_tsv and os.path.isfile(merged_tsv):
+                logging.info(f"Generating abundance plots for {domain} at rank {rank}.")
+                generate_abundance_plots(merged_tsv, args.top_N, args.col_filter, args.pat_to_keep, rank)
+                if args.run_ref_base:
+                    df = pd.read_csv(merged_tsv, sep="\t")
+                    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+                    logging.info(f"Starting reference-based assembly for {domain} at rank {rank}.")
+                    ref_based(df, run_bowtie, args.output_dir)
+                if args.run_deno_ref:
+                    df = pd.read_csv(merged_tsv, sep="\t")
+                    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+                    logging.info(f"Starting de novo reference assembly for {domain} at rank {rank}.")
+                    deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
     
     # Optionally process all ranks (if --process_all_ranks is set)
     if args.process_all_ranks:
@@ -192,14 +209,14 @@ def main():
             sample_id_df.to_csv(os.path.join(args.output_dir, "sample_ids.csv"), index=False)
             process_all_ranks(args.output_dir, sample_id_df=sample_id_df,
                               read_count=args.read_count, max_read_count=args.top_N,
-                              top_N=args.top_N)
+                              top_N=args.top_N, col_filter=args.col_filter, pat_to_keep=args.pat_to_keep)
         else:
             if not args.metadata_file or not os.path.isfile(args.metadata_file):
                 logging.error(f"Metadata file '{args.metadata_file}' not found.")
                 sys.exit(1)
             process_all_ranks(args.output_dir, metadata_file=args.metadata_file,
                               read_count=args.read_count, max_read_count=args.top_N,
-                              top_N=args.top_N)
+                              top_N=args.top_N, col_filter=args.col_filter, pat_to_keep=args.pat_to_keep)
 
 if __name__ == "__main__":
     main()
