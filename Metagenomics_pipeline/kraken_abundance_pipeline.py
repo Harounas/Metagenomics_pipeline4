@@ -290,15 +290,21 @@ def generate_abundance_plots(merged_tsv_path, top_N, col_filter, pat_to_keep, ra
     Generates abundance plots for classifications at the specified rank code,
     considering Viruses, Eukaryota, Bacteria, and Archaea.
     
-    For example, at species level (default), rows with Rank_code in ['S','S1','S2','S3']
+    For example, at species level (default 'S'), rows with Rank_code in ['S','S1','S2','S3']
     are selected; similarly for other ranks.
     """
     try:
         # Get the directory where the aggregated TSV files are stored.
         kraken_dir = os.path.dirname(merged_tsv_path)
         
-        # Define human-friendly rank titles and a suffix for file naming.
-        rank_titles = {'S': 'Species', 'K': 'Kingdom', 'G': 'Genus', 'F': 'Family'}
+        # Define human-friendly rank titles and suffix for file naming.
+        rank_titles = {
+            'S': 'Species',
+            'K': 'Kingdom',
+            'G': 'Genus',
+            'F': 'Family',
+            'D': 'Domain'
+        }
         rank_suffix = '' if rank_code == 'S' else f"_{rank_code}"
         
         # Mapping for rank-level filtering.
@@ -345,8 +351,9 @@ def generate_abundance_plots(merged_tsv_path, top_N, col_filter, pat_to_keep, ra
                 if focus in categorical_cols:
                     categorical_cols.remove(focus)
                 
+                # Use groupby with as_index=False to avoid duplicate column insertion.
                 for col in categorical_cols:
-                    grouped_sum = df_focus.groupby([focus, col])['Nr_frag_direct_at_taxon'].mean().reset_index()
+                    grouped_sum = df_focus.groupby([focus, col], as_index=False)['Nr_frag_direct_at_taxon'].mean()
                     
                     fig = px.bar(
                         grouped_sum,
@@ -363,6 +370,7 @@ def generate_abundance_plots(merged_tsv_path, top_N, col_filter, pat_to_keep, ra
     
     except Exception as e:
         logging.error(f"Error generating abundance plots for rank {rank_code}: {e}")
+
 
 def process_all_ranks(kraken_dir, metadata_file=None, sample_id_df=None, read_count=1,
                       max_read_count=10**30, top_N=None, col_filter=None, pat_to_keep=None):
