@@ -295,37 +295,40 @@ def generate_abundance_plots(merged_tsv_path, top_N, col_filter, pat_to_keep, ra
         rank_suffix = '' if rank_code == 'S' else f"_{rank_code}"
         
         categories = [
-            ('Viruses', 'Virus', 'Viral'),
-            ('Bacteria', 'Bacteria', 'Bacterial'),
-            ('Archaea', 'Archaea', 'Archaeal'),
-            ('Eukaryota', 'Eukaryota', 'Eukaryotic')
+            ('Viruses', 'merged_kraken_' + rank_code + '_Virus.tsv', 'Viral'),
+            ('Bacteria', 'merged_kraken_' + rank_code + '_Bacteria.tsv', 'Bacterial'),
+            ('Archaea', 'merged_kraken_' + rank_code + '_Archaea.tsv', 'Archaeal'),
+            ('Eukaryota', 'merged_kraken_' + rank_code + '_Eukaryota.tsv', 'Eukaryotic')
         ]
         
-        for focus, filter_str, plot_title in categories:
-            df_focus = df[df['Scientific_name'].str.contains(filter_str, case=False, na=False)]
-            df_focus = df_focus.rename(columns={'Scientific_name': focus})
-            
-            if top_N:
-                top_N_categories = df_focus[focus].value_counts().head(top_N).index
-                df_focus = df_focus[df_focus[focus].isin(top_N_categories)]
-            
-            categorical_cols = df_focus.select_dtypes(include=['object']).columns.tolist()
-            if focus in categorical_cols:
-                categorical_cols.remove(focus)
-            
-            for col in categorical_cols:
-                grouped_sum = df_focus.groupby([focus, col])['Nr_frag_direct_at_taxon'].mean().reset_index()
+        for focus, file_name, plot_title in categories:
+            try:
+                df_focus = pd.read_csv(file_name, sep="\t")
+                df_focus = df_focus.rename(columns={'Scientific_name': focus})
                 
-                fig = px.bar(
-                    grouped_sum,
-                    x=col,
-                    y='Nr_frag_direct_at_taxon',
-                    color=focus,
-                    title=f"{plot_title} {rank_titles[rank_code]} Abundance by {col}"
-                )
-                output_img = f"{plot_title}_Abundance_by_{col}{rank_suffix}.png"
-                fig.write_image(output_img, format='png', scale=3, width=1920, height=1080)
-                logging.info(f"Abundance plot saved to {output_img}")
+                if top_N:
+                    top_N_categories = df_focus[focus].value_counts().head(top_N).index
+                    df_focus = df_focus[df_focus[focus].isin(top_N_categories)]
+                
+                categorical_cols = df_focus.select_dtypes(include=['object']).columns.tolist()
+                if focus in categorical_cols:
+                    categorical_cols.remove(focus)
+                
+                for col in categorical_cols:
+                    grouped_sum = df_focus.groupby([focus, col])['Nr_frag_direct_at_taxon'].mean().reset_index()
+                    
+                    fig = px.bar(
+                        grouped_sum,
+                        x=col,
+                        y='Nr_frag_direct_at_taxon',
+                        color=focus,
+                        title=f"{plot_title} {rank_titles[rank_code]} Abundance by {col}"
+                    )
+                    output_img = f"{plot_title}_Abundance_by_{col}{rank_suffix}.png"
+                    fig.write_image(output_img, format='png', scale=3, width=1920, height=1080)
+                    logging.info(f"Abundance plot saved to {output_img}")
+            except FileNotFoundError:
+                logging.warning(f"File {file_name} not found, skipping {focus} plot generation.")
     
     except Exception as e:
         logging.error(f"Error generating abundance plots for rank {rank_code}: {e}")
