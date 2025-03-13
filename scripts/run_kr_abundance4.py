@@ -196,11 +196,13 @@ def main():
                     generate_abundance_plots(merged_tsv, args.top_N, args.col_filter, args.pat_to_keep, rank)
                     if args.run_ref_base:
                         df = pd.read_csv(merged_tsv, sep="\t")
+                        df = df[~df['Scientific_name'].str.contains('Homo sapiens', case=False, na=False)]
                         df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
                         logging.info(f"Starting reference-based assembly for {domain} at rank {rank}.")
                         ref_based(df, run_bowtie, args.output_dir)
                     if args.run_deno_ref:
                         df = pd.read_csv(merged_tsv, sep="\t")
+                        df = df[~df['Scientific_name'].str.contains('Homo sapiens', case=False, na=False)]
                         df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
                         logging.info(f"Starting de novo reference assembly for {domain} at rank {rank}.")
                         deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
@@ -211,11 +213,13 @@ def main():
         if merged_tsv and os.path.isfile(merged_tsv):
             if args.run_ref_base:
                 df = pd.read_csv(merged_tsv, sep="\t")
+                df = df[~df['Scientific_name'].str.contains('Homo sapiens', case=False, na=False)]
                 df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
                 logging.info("Starting reference-based assembly for all genomes using unfiltered TSV.")
                 ref_based(df, run_bowtie, args.output_dir)
             if args.run_deno_ref:
                 df = pd.read_csv(merged_tsv, sep="\t")
+                df = df[~df['Scientific_name'].str.contains('Homo sapiens', case=False, na=False)]
                 df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
                 logging.info("Starting de novo reference assembly for all genomes using unfiltered TSV.")
                 deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
