@@ -137,6 +137,8 @@ def ref_based(df, run_bowtie, input_dir):
             ensure_directory_exists(sample_dir)
             
             reference_list = split_fasta(fasta_file, sample_dir)
+            if len(reference_list) > 10:
+                 reference_list = random.sample(reference_list, 10)
             best_ref = get_best_reference(sample_r1, sample_r2, reference_list)
             if not best_ref:
                 continue
