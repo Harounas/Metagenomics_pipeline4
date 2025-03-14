@@ -88,6 +88,9 @@ def main():
     # New flag: if set, skip Kraken report processing and abundance plot generation,
     # and directly generate the unfiltered TSV to pass to genome assembly.
     parser.add_argument("--skip_reports", action='store_true', help="Skip processing Kraken reports and generating plots; directly run genome assembly.")
+    # New flag: if set, skip regenerating files that already exist.
+    parser.add_argument("--skip_existing", action='store_true', help="Skip regenerating files that already exist.")
+    
     args = parser.parse_args()
 
     # Define per-domain read count thresholds
@@ -203,13 +206,13 @@ def main():
                         df = df[~df['Scientific_name'].str.contains('Homo sapiens', case=False, na=False)]
                         df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
                         logging.info(f"Starting reference-based assembly for {domain} at rank {rank}.")
-                        ref_based(df, run_bowtie, args.output_dir)
+                        ref_based(df, run_bowtie, args.output_dir, skip_existing=args.skip_existing)
                     if args.run_deno_ref:
                         df = pd.read_csv(merged_tsv, sep="\t")
                         df = df[~df['Scientific_name'].str.contains('Homo sapiens', case=False, na=False)]
                         df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
                         logging.info(f"Starting de novo reference assembly for {domain} at rank {rank}.")
-                        deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
+                        deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie, skip_existing=args.skip_existing)
     else:
         logging.info("Skipping domain-specific report processing and plot generation. Running genome assembly directly using unfiltered merged TSV.")
         # When skipping report processing, generate an unfiltered TSV and use it for assembly.
@@ -228,13 +231,13 @@ def main():
                 df = df[~df['Scientific_name'].str.contains('Homo sapiens', case=False, na=False)]
                 df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
                 logging.info("Starting reference-based assembly for all genomes using provided TSV.")
-                ref_based(df, run_bowtie, args.output_dir)
+                ref_based(df, run_bowtie, args.output_dir, skip_existing=args.skip_existing)
             if args.run_deno_ref:
                 df = pd.read_csv(merged_tsv, sep="\t")
                 df = df[~df['Scientific_name'].str.contains('Homo sapiens', case=False, na=False)]
                 df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
                 logging.info("Starting de novo reference assembly for all genomes using provided TSV.")
-                deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie)
+                deno_ref_based(df, args.output_dir, args.output_dir, run_bowtie, skip_existing=args.skip_existing)
     
     # Optionally process all ranks (if --process_all_ranks is set)
     if args.process_all_ranks:
