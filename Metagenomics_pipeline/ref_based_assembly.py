@@ -92,10 +92,10 @@ def extract_sequence(fasta_file):
         logging.error(f"Error extracting sequence from {fasta_file}: {e}")
         return ""
 
-def fetch_reference_fasta(taxid, output_path):
+def fetch_reference_fasta(taxid, output_path, skip_existing=False):
     """Fetches reference FASTA from NCBI if not already downloaded."""
-    if os.path.exists(output_path):
-        logging.info(f"Reference FASTA for taxid {taxid} already exists.")
+    if skip_existing and os.path.exists(output_path):
+        logging.info(f"Reference FASTA for taxid {taxid} already exists (skip_existing=True).")
         return output_path
 
     ensure_directory_exists(REFERENCE_DIR)
@@ -109,7 +109,7 @@ def fetch_reference_fasta(taxid, output_path):
     subprocess.run(f"bwa index {output_path}", shell=True, check=True)
     return output_path
 
-def ref_based(df, run_bowtie, input_dir):
+def ref_based(df, run_bowtie, input_dir, skip_existing=False):
     """Performs reference-based analysis for each taxon in the dataset."""
     ensure_directory_exists(REFERENCE_DIR)
     df['Ref_len'] = ""
@@ -126,7 +126,7 @@ def ref_based(df, run_bowtie, input_dir):
         scientific_name = dftax['Scientific_name'].iloc[0].replace(' ', '_').replace('/', '_').replace(')', '').replace('(', '')
         fasta_path = os.path.join(REFERENCE_DIR, f"{scientific_name}_txid{tax}.fasta")
         
-        fasta_file = fetch_reference_fasta(tax, fasta_path)
+        fasta_file = fetch_reference_fasta(tax, fasta_path, skip_existing=skip_existing)
         if not fasta_file:
             continue
         
@@ -139,7 +139,7 @@ def ref_based(df, run_bowtie, input_dir):
             
             reference_list = split_fasta(fasta_file, sample_dir)
             if len(reference_list) > 10:
-                 reference_list = random.sample(reference_list, 10)
+                reference_list = random.sample(reference_list, 10)
             best_ref = get_best_reference(sample_r1, sample_r2, reference_list)
             if not best_ref:
                 continue
@@ -151,27 +151,40 @@ def ref_based(df, run_bowtie, input_dir):
             vcf_file = os.path.join(sample_dir, f"{sample}_{scientific_name}_variants.vcf")
             consensus_file = os.path.join(sample_dir, f"{sample}_{scientific_name}_consensus_genome.fa")
             
-            subprocess.run(f"bwa mem -a -t 16 {best_ref} {sample_r1} {sample_r2} | samtools view -u -@ 3 - | samtools sort -@ 16 -o {bam_file}", shell=True, check=True)
-            subprocess.run(f"samtools index {bam_file}", shell=True, check=True)
-            subprocess.run(f"bcftools mpileup -f {best_ref} {bam_file} | bcftools call -c --ploidy 1 -v -o {vcf_file}", shell=True, check=True)
-            subprocess.run(f"samtools mpileup -aa -A -d 0 -Q 0 -f {best_ref} {bam_file} | ivar consensus -p {consensus_file} -t 0.5 -m 10 -n N", shell=True, check=True)
+            # Generate BAM file if it does not exist or skip_existing is False
+            if not (skip_existing and os.path.exists(bam_file)):
+                subprocess.run(f"bwa mem -a -t 16 {best_ref} {sample_r1} {sample_r2} | samtools view -u -@ 3 - | samtools sort -@ 16 -o {bam_file}", shell=True, check=True)
+                subprocess.run(f"samtools index {bam_file}", shell=True, check=True)
+            else:
+                logging.info(f"BAM file {bam_file} already exists. Skipping BAM generation.")
+            
+            # Generate VCF file if it does not exist or skip_existing is False
+            if not (skip_existing and os.path.exists(vcf_file)):
+                subprocess.run(f"bcftools mpileup -f {best_ref} {bam_file} | bcftools call -c --ploidy 1 -v -o {vcf_file}", shell=True, check=True)
+            else:
+                logging.info(f"VCF file {vcf_file} already exists. Skipping VCF generation.")
+            
+            # Generate consensus genome if it does not exist or skip_existing is False
+            if not (skip_existing and os.path.exists(consensus_file)):
+                subprocess.run(f"samtools mpileup -aa -A -d 0 -Q 0 -f {best_ref} {bam_file} | ivar consensus -p {consensus_file} -t 0.5 -m 10 -n N", shell=True, check=True)
+            else:
+                logging.info(f"Consensus file {consensus_file} already exists. Skipping consensus generation.")
 
             ref_len = len(extract_sequence(best_ref))
             consensus_len = len(extract_sequence(consensus_file))
             completeness = round((consensus_len / ref_len) * 100, 2) if ref_len > 0 else 0
             depth = calculate_average_read_depth(bam_file)
             
-            dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Consensus_len', 'Completeness(%)', 'Depth', 'Accession_number', 'sequence']] = [ref_len, consensus_len, completeness, depth, acc, extract_sequence(consensus_file)]
+            dftax.loc[dftax['SampleID'] == sample, ['Ref_len', 'Consensus_len', 'Completeness(%)', 'Depth', 'Accession_number', 'sequence']] = \
+                [ref_len, consensus_len, completeness, depth, acc, extract_sequence(consensus_file)]
         
         results.append(dftax)
     
     pd.concat(results).to_csv("Output-summary.csv", index=False)
 
     merged_df = pd.concat(results, ignore_index=True)
-    
-    
     filtered_df = merged_df[pd.to_numeric(merged_df['Completeness(%)'], errors='coerce') >= 60]
     filtered_df.to_csv("Output-summary_complete.csv", index=False)
     merged_df.drop(columns=['sequence'], inplace=True)
     merged_df.to_csv("Output-summary1.csv", index=False)
-  
+
