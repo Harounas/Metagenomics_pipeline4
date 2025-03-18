@@ -81,7 +81,28 @@ def get_best_reference(sample_r1, sample_r2, reference_list):
     
     return max(alignment_scores, key=alignment_scores.get) if alignment_scores else None
 
-
+def calculate_average_read_depth(bam_file):
+    """
+    Calculate the average read depth from a BAM file using samtools depth.
+    """
+    try:
+        # Run samtools depth command
+        result = subprocess.run(
+            ["samtools", "depth", bam_file],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        # Process the output to calculate average depth
+        depths = [int(line.split()[2]) for line in result.stdout.splitlines()]
+        if depths:
+            average_depth = sum(depths) / len(depths)
+        else:
+            average_depth = 0
+        return average_depth
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Error calculating read depth for {bam_file}: {e}")
+        return None
 def extract_sequence(fasta_file):
     """Extracts sequence from a FASTA file."""
     try:
