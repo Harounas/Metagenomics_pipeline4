@@ -38,26 +38,24 @@ def split_fasta(input_file, output_dir):
             fasta_files.append(file_path)
     return fasta_files
 
-def calculate_average_read_depth(bam_file):
-    """Calculate average read depth from a BAM file using samtools depth."""
-    try:
-        result = subprocess.run(["samtools", "depth", bam_file], capture_output=True, text=True, check=True)
-        depths = [int(line.split()[2]) for line in result.stdout.splitlines()]
-        return sum(depths) / len(depths) if depths else 0
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Error calculating read depth for {bam_file}: {e}")
-        return None
-
 def get_best_reference(sample_r1, sample_r2, reference_list):
     """Aligns paired-end FASTQ files to a list of reference FASTA files and returns the best reference."""
     alignment_scores = {}
     for fasta in reference_list:
         index_base = Path(fasta).stem
-        output_sam = f"{index_base}_aligned.sam"
-
+        
+        # Extract reference accession number
+        acc_cmd = f"grep '^>' {fasta} | cut -d ' ' -f1 | sed 's/^>//'"
+        acc = subprocess.run(acc_cmd, shell=True, capture_output=True, text=True, check=True).stdout.strip().split("\n")[0]
+        
+        # Extract sample ID without extensions
+        sample_id = Path(sample_r1).stem.replace("_unmapped_1", "").replace("_trimmed_R1", "")
+        
+        output_sam = f"{acc}_{sample_id}.sam"
+        
         if not Path(f"{fasta}.bwt").exists():
             subprocess.run(["bwa", "index", fasta], check=True)
-
+        
         try:
             with open(output_sam, "w") as sam_file:
                 subprocess.run(["bwa", "mem", fasta, sample_r1, sample_r2], check=True, stdout=sam_file)
@@ -69,7 +67,7 @@ def get_best_reference(sample_r1, sample_r2, reference_list):
         try:
             with open(output_sam, "r") as sam_file:
                 for line in sam_file:
-                    if not line.startswith("@"):
+                    if not line.startswith("@"):  # Skip headers
                         fields = line.strip().split("\t")
                         try:
                             score += int([tag for tag in fields if tag.startswith("AS:i:")][0].split(":")[2])
@@ -80,8 +78,9 @@ def get_best_reference(sample_r1, sample_r2, reference_list):
             continue
 
         alignment_scores[fasta] = score
-
+    
     return max(alignment_scores, key=alignment_scores.get) if alignment_scores else None
+
 
 def extract_sequence(fasta_file):
     """Extracts sequence from a FASTA file."""
